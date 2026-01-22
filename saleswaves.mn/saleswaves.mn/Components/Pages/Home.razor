@@ -1,7 +1,285 @@
 ﻿@page "/"
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Saleswaves.mn - Борлуулалтын Шилдэг Шийдэл</PageTitle>
 
-<h1>Hello, world!</h1>
+<div class="home-page">
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="hero-content">
+            <h1 class="hero-title">Saleswaves.mn</h1>
+            <p class="hero-subtitle">Таны Бизнесийн Борлуулалтыг Хөгжүүлэх Найдвартай Түнш</p>
+            <p class="hero-description">
+                Бид орчин үеийн борлуулалтын шийдлүүд, логистикийн үйлчилгээ,
+                бизнес зөвлөгөө өгч таны бизнесийг өсгөхөд туслана.
+            </p>
+            <div class="hero-buttons">
+                <a href="#contact" class="btn btn-primary-hero">Холбогдох</a>
+                <a href="#services" class="btn btn-secondary-hero">Үйлчилгээ</a>
+            </div>
+        </div>
+        <div class="hero-wave">
+            <svg viewBox="0 0 1440 320" preserveAspectRatio="none">
+                <path fill="#ffffff" fill-opacity="1"
+                    d="M0,160L48,165.3C96,171,192,181,288,165.3C384,149,480,107,576,112C672,117,768,171,864,186.7C960,203,1056,181,1152,154.7C1248,128,1344,96,1392,80L1440,64L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z">
+                </path>
+            </svg>
+        </div>
+    </section>
 
-Welcome to your new app.
+    <!-- Services Section -->
+    <section class="services-section" id="services">
+        <div class="container">
+            <h2 class="section-title">Манай Үйлчилгээ</h2>
+            <p class="section-subtitle">Таны бизнест тохирсон иж бүрэн шийдлүүд</p>
+
+            <div class="services-grid">
+                <div class="service-card">
+                    <div class="service-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 3h7v7H3z M14 3h7v7h-7z M14 14h7v7h-7z M3 14h7v7H3z"/>
+                        </svg>
+                    </div>
+                    <h3>Борлуулалтын Систем</h3>
+                    <p>CRM систем, борлуулалтын автоматжуулалт, мэдээллийн сан удирдлага</p>
+                </div>
+
+                <div class="service-card">
+                    <div class="service-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                    </div>
+                    <h3>Бизнес Шинжилгээ</h3>
+                    <p>Өгөгдөл дүн шинжилгээ, зах зээлийн судалгаа, стратеги төлөвлөлт</p>
+                </div>
+
+                <div class="service-card">
+                    <div class="service-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                            <line x1="1" y1="10" x2="23" y2="10"/>
+                        </svg>
+                    </div>
+                    <h3>Логистик Үйлчилгээ</h3>
+                    <p>Ачаа тээвэр, агуулах хадгалалт, хуваарилалт, хүргэлтийн удирдлага</p>
+                </div>
+
+                <div class="service-card">
+                    <div class="service-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75"/>
+                        </svg>
+                    </div>
+                    <h3>Зөвлөх Үйлчилгээ</h3>
+                    <p>Бизнес зөвлөгөө, процесс сайжруулалт, сургалт, дэмжлэг үзүүлэх</p>
+                </div>
+
+                <div class="service-card">
+                    <div class="service-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                        </svg>
+                    </div>
+                    <h3>Гүйцэтгэлийн Хяналт</h3>
+                    <p>KPI хяналт, тайлан бэлтгэл, борлуулалтын үр дүнгийн дүн шинжилгээ</p>
+                </div>
+
+                <div class="service-card">
+                    <div class="service-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                            <polyline points="7.5 4.21 12 6.81 16.5 4.21"/>
+                            <polyline points="7.5 19.79 7.5 14.6 3 12"/>
+                            <polyline points="21 12 16.5 14.6 16.5 19.79"/>
+                            <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                            <line x1="12" y1="22.08" x2="12" y2="12"/>
+                        </svg>
+                    </div>
+                    <h3>Нийлүүлэлтийн Сүлжээ</h3>
+                    <p>Түнш сүлжээ, нийлүүлэгчийн удирдлага, бүтээгдэхүүн хүргэлт</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section class="about-section" id="about">
+        <div class="container">
+            <div class="about-grid">
+                <div class="about-content">
+                    <h2 class="section-title">Saleswaves-н тухай</h2>
+                    <p class="about-text">
+                        Saleswaves.mn нь Монгол улсын тэргүүлэх борлуулалт, логистикийн шийдлүүдийг
+                        санал болгодог компани юм. Бид орчин үеийн технологи, туршлагатай мэргэжилтнүүдийг
+                        нэгтгэн таны бизнесийн өсөлтөд тусална.
+                    </p>
+                    <p class="about-text">
+                        Манай зорилго бол Монгол улсын бизнесүүдэд дэлхийн стандартын үйлчилгээ,
+                        шийдлүүдийг хүртээмжтэй болгох явдал юм.
+                    </p>
+                    <div class="about-features">
+                        <div class="feature-item">
+                            <span class="feature-icon">✓</span>
+                            <span>10+ жилийн туршлага</span>
+                        </div>
+                        <div class="feature-item">
+                            <span class="feature-icon">✓</span>
+                            <span>Мэргэжлийн баг</span>
+                        </div>
+                        <div class="feature-item">
+                            <span class="feature-icon">✓</span>
+                            <span>24/7 дэмжлэг</span>
+                        </div>
+                        <div class="feature-item">
+                            <span class="feature-icon">✓</span>
+                            <span>Олон улсын стандарт</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="about-image">
+                    <div class="about-image-placeholder">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                            <circle cx="12" cy="10" r="3"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="stats-section">
+        <div class="container">
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-number">500+</div>
+                    <div class="stat-label">Хамтрагч байгууллага</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">10,000+</div>
+                    <div class="stat-label">Хэрэгжүүлсэн төсөл</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">99.9%</div>
+                    <div class="stat-label">Хүргэлтийн нарийвчлал</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">24/7</div>
+                    <div class="stat-label">Дэмжлэг үйлчилгээ</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section class="contact-section" id="contact">
+        <div class="container">
+            <h2 class="section-title">Холбогдох</h2>
+            <p class="section-subtitle">Бидэнтэй хамтран ажиллахыг хүсвэл бидэнтэй холбогдоорой</p>
+
+            <div class="contact-grid">
+                <div class="contact-info">
+                    <div class="contact-item">
+                        <div class="contact-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                                <circle cx="12" cy="10" r="3"/>
+                            </svg>
+                        </div>
+                        <div class="contact-details">
+                            <h4>Хаяг</h4>
+                            <p>Улаанбаатар хот, Монгол улс</p>
+                        </div>
+                    </div>
+
+                    <div class="contact-item">
+                        <div class="contact-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                            </svg>
+                        </div>
+                        <div class="contact-details">
+                            <h4>Утас</h4>
+                            <p>+976 7000-0000</p>
+                        </div>
+                    </div>
+
+                    <div class="contact-item">
+                        <div class="contact-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                                <polyline points="22,6 12,13 2,6"/>
+                            </svg>
+                        </div>
+                        <div class="contact-details">
+                            <h4>Имэйл</h4>
+                            <p>info@saleswaves.mn</p>
+                        </div>
+                    </div>
+
+                    <div class="contact-item">
+                        <div class="contact-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <polyline points="12 6 12 12 16 14"/>
+                            </svg>
+                        </div>
+                        <div class="contact-details">
+                            <h4>Ажлын цаг</h4>
+                            <p>Даваа - Баасан: 09:00 - 18:00</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="contact-form-wrapper">
+                    <div class="contact-form">
+                        <h3>Мессеж илгээх</h3>
+                        <form>
+                            <div class="form-group">
+                                <input type="text" placeholder="Таны нэр" required />
+                            </div>
+                            <div class="form-group">
+                                <input type="email" placeholder="Имэйл хаяг" required />
+                            </div>
+                            <div class="form-group">
+                                <input type="tel" placeholder="Утасны дугаар" required />
+                            </div>
+                            <div class="form-group">
+                                <textarea rows="5" placeholder="Таны мессеж" required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-submit">Илгээх</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer-section">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <h3>Saleswaves.mn</h3>
+                    <p>Таны бизнесийн найдвартай түнш</p>
+                </div>
+                <div class="footer-links">
+                    <a href="#services">Үйлчилгээ</a>
+                    <a href="#about">Бидний тухай</a>
+                    <a href="#contact">Холбогдох</a>
+                </div>
+                <div class="footer-bottom">
+                    <p>&copy; 2026 Saleswaves.mn. Бүх эрх хуулиар хамгаалагдсан.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+</div>
+
+@code {
+
+}
