@@ -62,6 +62,24 @@
     width: 100%;
 }
 
+.nav-link-modern.lang-switch {
+    padding: 8px 16px;
+    border: 2px solid #667eea;
+    border-radius: 20px;
+    font-weight: 600;
+    color: #667eea;
+    transition: all 0.3s ease;
+}
+
+.nav-link-modern.lang-switch:hover {
+    background: #667eea;
+    color: white;
+}
+
+.nav-link-modern.lang-switch::after {
+    display: none;
+}
+
 /* Mobile Navigation */
 .nav-toggle {
     display: none;
