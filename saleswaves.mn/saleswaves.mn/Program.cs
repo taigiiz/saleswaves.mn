@@ -62,18 +62,19 @@ if (!app.Environment.IsDevelopment())
 // Add security headers middleware
 app.Use(async (context, next) =>
 {
-    // Content Security Policy
+    // Content Security Policy - Blazor-friendly configuration
     context.Response.Headers.Append("Content-Security-Policy",
         "default-src 'self'; " +
         "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.openstreetmap.org; " +
         "style-src 'self' 'unsafe-inline'; " +
         "img-src 'self' data: https: blob:; " +
         "font-src 'self' data:; " +
-        "connect-src 'self' https://www.mongolbank.mn wss: ws:; " +
+        "connect-src 'self' https://www.mongolbank.mn https://api.exchangerate-api.com wss://* ws://*; " +
         "frame-src https://www.openstreetmap.org; " +
         "frame-ancestors 'none'; " +
         "base-uri 'self'; " +
-        "form-action 'self'");
+        "form-action 'self'; " +
+        "upgrade-insecure-requests;");
 
     // Enhanced HSTS (when not in development)
     if (!app.Environment.IsDevelopment())
@@ -82,14 +83,8 @@ app.Use(async (context, next) =>
             "max-age=31536000; includeSubDomains; preload");
     }
 
-    // Cross-Origin-Opener-Policy
-    context.Response.Headers.Append("Cross-Origin-Opener-Policy", "same-origin");
-
     // X-Content-Type-Options
     context.Response.Headers.Append("X-Content-Type-Options", "nosniff");
-
-    // X-Frame-Options
-    context.Response.Headers.Append("X-Frame-Options", "DENY");
 
     // Referrer-Policy
     context.Response.Headers.Append("Referrer-Policy", "strict-origin-when-cross-origin");
@@ -101,19 +96,36 @@ app.Use(async (context, next) =>
     await next();
 });
 
-// Enable response compression
-app.UseResponseCompression();
+// Enable response compression (but not for Blazor SignalR)
+app.UseWhen(
+    context => !context.Request.Path.StartsWithSegments("/_blazor"),
+    appBuilder => appBuilder.UseResponseCompression()
+);
 
 app.UseHttpsRedirection();
 
-// Configure static files with caching
+// Configure static files with smart caching
 app.UseStaticFiles(new StaticFileOptions
 {
     OnPrepareResponse = ctx =>
     {
-        // Cache static files for 1 year (immutable resources)
-        const int durationInSeconds = 60 * 60 * 24 * 365;
-        ctx.Context.Response.Headers.Append("Cache-Control", $"public,max-age={durationInSeconds},immutable");
+        var path = ctx.Context.Request.Path.Value?.ToLower() ?? "";
+
+        // Cache images, fonts, CSS, JS for 1 year
+        if (path.EndsWith(".css") || path.EndsWith(".js") ||
+            path.EndsWith(".png") || path.EndsWith(".jpg") || path.EndsWith(".jpeg") ||
+            path.EndsWith(".gif") || path.EndsWith(".svg") || path.EndsWith(".webp") ||
+            path.EndsWith(".woff") || path.EndsWith(".woff2") || path.EndsWith(".ttf") || path.EndsWith(".eot"))
+        {
+            const int durationInSeconds = 60 * 60 * 24 * 365; // 1 year
+            ctx.Context.Response.Headers.Append("Cache-Control", $"public,max-age={durationInSeconds},immutable");
+        }
+        else
+        {
+            // For other files, use shorter cache (1 hour)
+            const int durationInSeconds = 60 * 60; // 1 hour
+            ctx.Context.Response.Headers.Append("Cache-Control", $"public,max-age={durationInSeconds}");
+        }
     }
 });
 
