@@ -1,0 +1,54 @@
+@using saleswaves.mn.Services
+@inject ICurrencyService CurrencyService
+@implements IDisposable
+
+<div class="currency-rate">
+    @if (isLoading)
+    {
+        <span class="currency-loading">Loading...</span>
+    }
+    else if (exchangeRate.HasValue)
+    {
+        <span class="currency-info">
+            <span class="currency-flag">🇯🇵</span>
+            <span class="currency-value">¥1 = ₮@exchangeRate.Value.ToString("N2")</span>
+        </span>
+    }
+    else
+    {
+        <span class="currency-error">Rate unavailable</span>
+    }
+</div>
+
+@code {
+    private decimal? exchangeRate;
+    private bool isLoading = true;
+    private System.Threading.Timer? refreshTimer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadExchangeRate();
+
+        // Refresh every 60 minutes
+        refreshTimer = new System.Threading.Timer(async _ =>
+        {
+            await InvokeAsync(async () =>
+            {
+                await LoadExchangeRate();
+                StateHasChanged();
+            });
+        }, null, TimeSpan.FromMinutes(60), TimeSpan.FromMinutes(60));
+    }
+
+    private async Task LoadExchangeRate()
+    {
+        isLoading = true;
+        exchangeRate = await CurrencyService.GetExchangeRateAsync("JPY", "MNT");
+        isLoading = false;
+    }
+
+    public void Dispose()
+    {
+        refreshTimer?.Dispose();
+    }
+}

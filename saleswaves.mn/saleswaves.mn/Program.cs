@@ -10,6 +10,12 @@ builder.Services.Configure<SmtpSettings>(
 // Register Email Service
 builder.Services.AddScoped<IEmailService, EmailService>();
 
+// Register HttpClient for API calls
+builder.Services.AddHttpClient<ICurrencyService, CurrencyService>();
+
+// Add Memory Cache for currency rates
+builder.Services.AddMemoryCache();
+
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();

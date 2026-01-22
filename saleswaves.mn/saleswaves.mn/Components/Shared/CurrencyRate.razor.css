@@ -1,0 +1,37 @@
+.currency-rate {
+    display: flex;
+    align-items: center;
+    padding: 6px 12px;
+    background: rgba(102, 126, 234, 0.1);
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.currency-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #667eea;
+}
+
+.currency-flag {
+    font-size: 1.1rem;
+}
+
+.currency-value {
+    font-weight: 600;
+}
+
+.currency-loading,
+.currency-error {
+    color: #718096;
+    font-size: 0.85rem;
+}
+
+@media (max-width: 768px) {
+    .currency-rate {
+        font-size: 0.8rem;
+        padding: 4px 10px;
+    }
+}
