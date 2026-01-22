@@ -1,0 +1,11 @@
+# robots.txt for saleswaves.mn
+User-agent: *
+Allow: /
+Disallow: /_blazor/
+Disallow: /_framework/
+
+# Sitemap location
+Sitemap: https://saleswaves.mn/sitemap.xml
+
+# Crawl-delay for respectful crawling
+Crawl-delay: 1

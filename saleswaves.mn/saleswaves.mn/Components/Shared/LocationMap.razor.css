@@ -43,7 +43,7 @@
     height: 24px;
 }
 
-.location-details h4 {
+.location-details h3 {
     font-size: 1.3rem;
     color: #2d3748;
     margin-bottom: 0.5rem;
@@ -60,7 +60,7 @@
     border-radius: 15px;
 }
 
-.route-info h4 {
+.route-info h3 {
     font-size: 1.3rem;
     color: #2d3748;
     margin-bottom: 1.5rem;
