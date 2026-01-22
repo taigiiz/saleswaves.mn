@@ -1,0 +1,99 @@
+<section class="map-section" id="location">
+    <div class="container">
+        <h2 class="section-title">@SectionTitle</h2>
+        <p class="section-subtitle">@SectionSubtitle</p>
+
+        <div class="map-container">
+            <div class="map-info">
+                <div class="location-card">
+                    <div class="location-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                            <circle cx="12" cy="10" r="3"/>
+                        </svg>
+                    </div>
+                    <div class="location-details">
+                        <h4>@OfficeTitle</h4>
+                        <p>@Address</p>
+                        <p>@City, @Country</p>
+                    </div>
+                </div>
+
+                <div class="route-info">
+                    <h4>@RouteTitle</h4>
+                    <div class="route-steps">
+                        <div class="route-step">
+                            <span class="route-icon">🇯🇵</span>
+                            <span>@StartPoint</span>
+                        </div>
+                        <div class="route-arrow">↓</div>
+                        <div class="route-step">
+                            <span class="route-icon">🚢</span>
+                            <span>@TransitInfo</span>
+                        </div>
+                        <div class="route-arrow">↓</div>
+                        <div class="route-step">
+                            <span class="route-icon">🇲🇳</span>
+                            <span>@EndPoint</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="map-embed">
+                <iframe
+                    src="@GetMapUrl()"
+                    width="100%"
+                    height="450"
+                    style="border:0; border-radius: 15px;"
+                    allowfullscreen=""
+                    loading="lazy"
+                    referrerpolicy="no-referrer-when-downgrade">
+                </iframe>
+            </div>
+        </div>
+    </div>
+</section>
+
+@code {
+    [Parameter]
+    public string SectionTitle { get; set; } = "Our Location";
+
+    [Parameter]
+    public string SectionSubtitle { get; set; } = "Find us and our shipping routes";
+
+    [Parameter]
+    public string OfficeTitle { get; set; } = "Ulaanbaatar Office";
+
+    [Parameter]
+    public string Address { get; set; } = "Main Street 123";
+
+    [Parameter]
+    public string City { get; set; } = "Ulaanbaatar";
+
+    [Parameter]
+    public string Country { get; set; } = "Mongolia";
+
+    [Parameter]
+    public double Latitude { get; set; } = 47.9184;
+
+    [Parameter]
+    public double Longitude { get; set; } = 106.9177;
+
+    [Parameter]
+    public string RouteTitle { get; set; } = "Shipping Route";
+
+    [Parameter]
+    public string StartPoint { get; set; } = "Japanese Ports";
+
+    [Parameter]
+    public string TransitInfo { get; set; } = "7-14 Days Transit";
+
+    [Parameter]
+    public string EndPoint { get; set; } = "Ulaanbaatar, Mongolia";
+
+    private string GetMapUrl()
+    {
+        return $"https://www.openstreetmap.org/export/embed.html?bbox={Longitude-0.05},{Latitude-0.05},{Longitude+0.05},{Latitude+0.05}&layer=mapnik&marker={Latitude},{Longitude}";
+    }
+}

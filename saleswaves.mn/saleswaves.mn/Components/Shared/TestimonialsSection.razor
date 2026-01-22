@@ -1,0 +1,52 @@
+@using saleswaves.mn.Models
+
+<section class="testimonials-section">
+    <div class="container">
+        <h2 class="section-title">@SectionTitle</h2>
+        <p class="section-subtitle">@SectionSubtitle</p>
+
+        <div class="testimonials-grid">
+            @foreach (var testimonial in Testimonials)
+            {
+                <div class="testimonial-card">
+                    <div class="testimonial-header">
+                        <div class="testimonial-avatar">
+                            @if (!string.IsNullOrEmpty(testimonial.ImageUrl))
+                            {
+                                <img src="@testimonial.ImageUrl" alt="@testimonial.Name" />
+                            }
+                            else
+                            {
+                                <div class="avatar-placeholder">@testimonial.Name.Substring(0, 1)</div>
+                            }
+                        </div>
+                        <div class="testimonial-info">
+                            <h4>@testimonial.Name</h4>
+                            <p class="testimonial-position">@testimonial.Position</p>
+                            <p class="testimonial-company">@testimonial.Company</p>
+                        </div>
+                    </div>
+                    <div class="testimonial-rating">
+                        @for (int i = 0; i < 5; i++)
+                        {
+                            <span class="star @(i < testimonial.Rating ? "filled" : "")">★</span>
+                        }
+                    </div>
+                    <p class="testimonial-content">@testimonial.Content</p>
+                    <p class="testimonial-date">@testimonial.Date.ToString("MMMM yyyy")</p>
+                </div>
+            }
+        </div>
+    </div>
+</section>
+
+@code {
+    [Parameter, EditorRequired]
+    public List<Testimonial> Testimonials { get; set; } = new();
+
+    [Parameter]
+    public string SectionTitle { get; set; } = "What Our Clients Say";
+
+    [Parameter]
+    public string SectionSubtitle { get; set; } = "Real feedback from our satisfied customers";
+}

@@ -1,0 +1,136 @@
+@using saleswaves.mn.Models
+@using saleswaves.mn.Services
+@inject IEmailService EmailService
+@rendermode InteractiveServer
+
+<div class="contact-form-wrapper">
+    <div class="contact-form">
+        <h3>@FormTitle</h3>
+
+        @if (!string.IsNullOrEmpty(statusMessage))
+        {
+            <div class="alert @(isSuccess ? "alert-success" : "alert-error")">
+                @statusMessage
+            </div>
+        }
+
+        <EditForm Model="@contactForm" OnValidSubmit="@HandleSubmit" FormName="ContactForm">
+            <DataAnnotationsValidator />
+
+            <div class="form-group">
+                <InputText @bind-Value="contactForm.Name"
+                          class="form-control"
+                          placeholder="@NamePlaceholder" />
+                <ValidationMessage For="@(() => contactForm.Name)" />
+            </div>
+
+            <div class="form-group">
+                <InputText @bind-Value="contactForm.Email"
+                          type="email"
+                          class="form-control"
+                          placeholder="@EmailPlaceholder" />
+                <ValidationMessage For="@(() => contactForm.Email)" />
+            </div>
+
+            <div class="form-group">
+                <InputText @bind-Value="contactForm.Phone"
+                          type="tel"
+                          class="form-control"
+                          placeholder="@PhonePlaceholder" />
+                <ValidationMessage For="@(() => contactForm.Phone)" />
+            </div>
+
+            <div class="form-group">
+                <InputTextArea @bind-Value="contactForm.Message"
+                              rows="5"
+                              class="form-control"
+                              placeholder="@MessagePlaceholder" />
+                <ValidationMessage For="@(() => contactForm.Message)" />
+            </div>
+
+            <button type="submit" class="btn btn-submit" disabled="@isSubmitting">
+                @if (isSubmitting)
+                {
+                    <span>@SendingText</span>
+                }
+                else
+                {
+                    <span>@SubmitButtonText</span>
+                }
+            </button>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string FormTitle { get; set; } = "Send us a message";
+
+    [Parameter]
+    public string NamePlaceholder { get; set; } = "Your name";
+
+    [Parameter]
+    public string EmailPlaceholder { get; set; } = "Email address";
+
+    [Parameter]
+    public string PhonePlaceholder { get; set; } = "Phone number";
+
+    [Parameter]
+    public string MessagePlaceholder { get; set; } = "Your message";
+
+    [Parameter]
+    public string SubmitButtonText { get; set; } = "Send";
+
+    [Parameter]
+    public string SendingText { get; set; } = "Sending...";
+
+    [Parameter]
+    public string SuccessMessage { get; set; } = "Thank you! Your message has been sent successfully.";
+
+    [Parameter]
+    public string ErrorMessage { get; set; } = "Sorry, there was an error sending your message. Please try again.";
+
+    [SupplyParameterFromForm]
+    private ContactFormModel contactForm { get; set; } = new();
+
+    private bool isSubmitting = false;
+    private string statusMessage = string.Empty;
+    private bool isSuccess = false;
+
+    private async Task HandleSubmit()
+    {
+        isSubmitting = true;
+        statusMessage = string.Empty;
+
+        try
+        {
+            var result = await EmailService.SendContactEmailAsync(
+                contactForm.Name,
+                contactForm.Email,
+                contactForm.Phone,
+                contactForm.Message
+            );
+
+            if (result)
+            {
+                statusMessage = SuccessMessage;
+                isSuccess = true;
+                contactForm = new ContactFormModel();
+            }
+            else
+            {
+                statusMessage = ErrorMessage;
+                isSuccess = false;
+            }
+        }
+        catch (Exception)
+        {
+            statusMessage = ErrorMessage;
+            isSuccess = false;
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+}

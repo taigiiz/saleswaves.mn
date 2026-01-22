@@ -1,0 +1,49 @@
+@using saleswaves.mn.Models
+@rendermode InteractiveServer
+
+<section class="faq-section" id="faq">
+    <div class="container">
+        <h2 class="section-title">@SectionTitle</h2>
+        <p class="section-subtitle">@SectionSubtitle</p>
+
+        <div class="faq-container">
+            @foreach (var (faq, index) in FaqItems.Select((item, i) => (item, i)))
+            {
+                <div class="faq-item @(activeIndex == index ? "active" : "")">
+                    <button class="faq-question" @onclick="() => ToggleFaq(index)">
+                        <span>@faq.Question</span>
+                        <span class="faq-icon">@(activeIndex == index ? "−" : "+")</span>
+                    </button>
+                    <div class="faq-answer @(activeIndex == index ? "show" : "")">
+                        <p>@faq.Answer</p>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</section>
+
+@code {
+    [Parameter, EditorRequired]
+    public List<FaqItem> FaqItems { get; set; } = new();
+
+    [Parameter]
+    public string SectionTitle { get; set; } = "Frequently Asked Questions";
+
+    [Parameter]
+    public string SectionSubtitle { get; set; } = "Find answers to common questions";
+
+    private int? activeIndex = null;
+
+    private void ToggleFaq(int index)
+    {
+        if (activeIndex == index)
+        {
+            activeIndex = null;
+        }
+        else
+        {
+            activeIndex = index;
+        }
+    }
+}

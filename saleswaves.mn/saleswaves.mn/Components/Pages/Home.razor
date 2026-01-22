@@ -124,29 +124,39 @@
         </div>
     </section>
 
-    <!-- Stats Section -->
-    <section class="stats-section">
-        <div class="container">
-            <div class="stats-grid">
-                <div class="stat-item">
-                    <div class="stat-number">10+</div>
-                    <div class="stat-label">Жил Японд ажилласан туршлага</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-number">2018</div>
-                    <div class="stat-label">Оноос Монголд үйлчилж байна</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-number">100%</div>
-                    <div class="stat-label">Харилцагчийн итгэл найдвар</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-number">24/7</div>
-                    <div class="stat-label">Дэмжлэг үйлчилгээ</div>
-                </div>
-            </div>
-        </div>
-    </section>
+    <!-- Live Stats Section -->
+    <LiveStats VehiclesThisWeek="15"
+              VehiclesInTransit="32"
+              TotalDelivered="500"
+              SatisfactionRate="98"
+              VehiclesLabel="Энэ долоо хоногт ирсэн машин"
+              InTransitLabel="Одоогоор замд байгаа"
+              DeliveredLabel="Нийт хүргэсэн"
+              SatisfactionLabel="Харилцагчийн сэтгэл ханамж" />
+
+    <!-- Testimonials Section -->
+    <TestimonialsSection Testimonials="@Data.SampleData.GetTestimonialsMn()"
+                        SectionTitle="Харилцагчдын сэтгэгдэл"
+                        SectionSubtitle="Манай үйлчлүүлэгчдийн бодит сэтгэгдэл" />
+
+    <!-- FAQ Section -->
+    <FaqSection FaqItems="@Data.SampleData.GetFaqItemsMn()"
+               SectionTitle="Түгээмэл асуулт хариулт"
+               SectionSubtitle="Санал болгож буй асуултуудын хариултыг эндээс олоорой" />
+
+    <!-- Location Map Section -->
+    <LocationMap SectionTitle="Манай байршил"
+                SectionSubtitle="Бидний байрлал болон тээврийн маршрут"
+                OfficeTitle="Улаанбаатар оффис"
+                Address="Гол гудамж 123"
+                City="Улаанбаатар"
+                Country="Монгол Улс"
+                Latitude="47.9184"
+                Longitude="106.9177"
+                RouteTitle="Тээврийн маршрут"
+                StartPoint="Японы боомтууд"
+                TransitInfo="7-14 хоногийн тээвэрлэлт"
+                EndPoint="Улаанбаатар, Монгол" />
 
     <!-- Contact Section -->
     <section class="contact-section" id="contact">
@@ -208,26 +218,15 @@
                     </div>
                 </div>
 
-                <div class="contact-form-wrapper">
-                    <div class="contact-form">
-                        <h3>Мессеж илгээх</h3>
-                        <form>
-                            <div class="form-group">
-                                <input type="text" placeholder="Таны нэр" required />
-                            </div>
-                            <div class="form-group">
-                                <input type="email" placeholder="Имэйл хаяг" required />
-                            </div>
-                            <div class="form-group">
-                                <input type="tel" placeholder="Утасны дугаар" required />
-                            </div>
-                            <div class="form-group">
-                                <textarea rows="5" placeholder="Таны мессеж" required></textarea>
-                            </div>
-                            <button type="submit" class="btn btn-submit">Илгээх</button>
-                        </form>
-                    </div>
-                </div>
+                <ContactForm FormTitle="Мессеж илгээх"
+                            NamePlaceholder="Таны нэр"
+                            EmailPlaceholder="Имэйл хаяг"
+                            PhonePlaceholder="Утасны дугаар"
+                            MessagePlaceholder="Таны мессеж"
+                            SubmitButtonText="Илгээх"
+                            SendingText="Илгээж байна..."
+                            SuccessMessage="Баярлалаа! Таны мессеж амжилттай илгээгдлээ."
+                            ErrorMessage="Уучлаарай, мессеж илгээхэд алдаа гарлаа. Дахин оролдоно уу." />
             </div>
         </div>
     </section>

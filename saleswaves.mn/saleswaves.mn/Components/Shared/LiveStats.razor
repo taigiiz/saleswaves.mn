@@ -1,0 +1,63 @@
+<section class="live-stats-section">
+    <div class="container">
+        <div class="live-stats-grid">
+            <div class="live-stat-card">
+                <div class="stat-icon">🚗</div>
+                <div class="stat-content">
+                    <div class="stat-number" data-target="@VehiclesThisWeek">0</div>
+                    <div class="stat-label">@VehiclesLabel</div>
+                </div>
+            </div>
+
+            <div class="live-stat-card">
+                <div class="stat-icon">🚢</div>
+                <div class="stat-content">
+                    <div class="stat-number" data-target="@VehiclesInTransit">0</div>
+                    <div class="stat-label">@InTransitLabel</div>
+                </div>
+            </div>
+
+            <div class="live-stat-card">
+                <div class="stat-icon">✓</div>
+                <div class="stat-content">
+                    <div class="stat-number" data-target="@TotalDelivered">0</div>
+                    <div class="stat-label">@DeliveredLabel</div>
+                </div>
+            </div>
+
+            <div class="live-stat-card">
+                <div class="stat-icon">⭐</div>
+                <div class="stat-content">
+                    <div class="stat-number">@SatisfactionRate%</div>
+                    <div class="stat-label">@SatisfactionLabel</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@code {
+    [Parameter]
+    public int VehiclesThisWeek { get; set; } = 15;
+
+    [Parameter]
+    public int VehiclesInTransit { get; set; } = 32;
+
+    [Parameter]
+    public int TotalDelivered { get; set; } = 500;
+
+    [Parameter]
+    public int SatisfactionRate { get; set; } = 98;
+
+    [Parameter]
+    public string VehiclesLabel { get; set; } = "Vehicles This Week";
+
+    [Parameter]
+    public string InTransitLabel { get; set; } = "Currently In Transit";
+
+    [Parameter]
+    public string DeliveredLabel { get; set; } = "Total Delivered";
+
+    [Parameter]
+    public string SatisfactionLabel { get; set; } = "Customer Satisfaction";
+}

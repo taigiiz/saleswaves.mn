@@ -1,0 +1,100 @@
+@using saleswaves.mn.Services
+@using saleswaves.mn.Models
+@inject ICurrencyService CurrencyService
+@implements IDisposable
+@rendermode InteractiveServer
+
+<div class="mongolbank-rates">
+    @if (isLoading)
+    {
+        <button class="rates-toggle" @onclick="ToggleDropdown">
+            <span class="rates-icon">💱</span>
+            <span class="rates-text">Loading...</span>
+            <span class="dropdown-arrow">▼</span>
+        </button>
+    }
+    else if (rates.Any())
+    {
+        <button class="rates-toggle" @onclick="ToggleDropdown">
+            <span class="rates-icon">💱</span>
+            <span class="rates-text">@Title</span>
+            <span class="dropdown-arrow @(showDropdown ? "rotated" : "")">▼</span>
+        </button>
+
+        @if (showDropdown)
+        {
+            <div class="rates-dropdown">
+                <div class="rates-header">
+                    <h4>@DropdownTitle</h4>
+                    <p class="rates-date">@DateText: @yesterday</p>
+                </div>
+                <div class="rates-grid">
+                    @foreach (var rate in rates)
+                    {
+                        <div class="rate-item">
+                            <div class="rate-info">
+                                <span class="rate-flag">@rate.Flag</span>
+                                <div class="rate-details">
+                                    <span class="rate-code">@rate.Code</span>
+                                    <span class="rate-name">@(IsEnglish ? rate.NameEn : rate.Name)</span>
+                                </div>
+                            </div>
+                            <div class="rate-value">
+                                <span class="rate-amount">@rate.Rate.ToString("N2")</span>
+                                <span class="rate-currency">₮</span>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    [Parameter]
+    public bool IsEnglish { get; set; } = false;
+
+    private List<ExchangeRateInfo> rates = new();
+    private bool isLoading = true;
+    private bool showDropdown = false;
+    private string yesterday = string.Empty;
+    private Timer? refreshTimer;
+
+    private string Title => IsEnglish ? "Official Rates" : "Албан ханш";
+    private string DropdownTitle => IsEnglish ? "Bank of Mongolia Official Exchange Rates" : "Монгол банкны албан ханш";
+    private string DateText => IsEnglish ? "Date" : "Огноо";
+
+    protected override async Task OnInitializedAsync()
+    {
+        yesterday = DateTime.Now.AddDays(-1).ToString("yyyy-MM-dd");
+        await LoadRates();
+
+        // Refresh rates every hour
+        refreshTimer = new Timer(async _ =>
+        {
+            await InvokeAsync(async () =>
+            {
+                await LoadRates();
+                StateHasChanged();
+            });
+        }, null, TimeSpan.FromMinutes(60), TimeSpan.FromMinutes(60));
+    }
+
+    private async Task LoadRates()
+    {
+        isLoading = true;
+        rates = await CurrencyService.GetMongolbankRatesAsync();
+        isLoading = false;
+    }
+
+    private void ToggleDropdown()
+    {
+        showDropdown = !showDropdown;
+    }
+
+    public void Dispose()
+    {
+        refreshTimer?.Dispose();
+    }
+}
