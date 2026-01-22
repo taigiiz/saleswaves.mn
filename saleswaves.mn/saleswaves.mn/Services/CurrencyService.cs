@@ -75,11 +75,11 @@ public class CurrencyService : ICurrencyService
         return rate.HasValue ? amount * rate.Value : null;
     }
 
-    public async Task<List<CurrencyRate>> GetMongolbankRatesAsync()
+    public async Task<List<ExchangeRateInfo>> GetMongolbankRatesAsync()
     {
         try
         {
-            if (_cache.TryGetValue(MongolbankCacheKey, out List<CurrencyRate>? cachedRates) && cachedRates != null)
+            if (_cache.TryGetValue(MongolbankCacheKey, out List<ExchangeRateInfo>? cachedRates) && cachedRates != null)
             {
                 _logger.LogInformation("Mongolbank rates retrieved from cache");
                 return cachedRates;
@@ -100,7 +100,7 @@ public class CurrencyService : ICurrencyService
             if (!response.IsSuccessStatusCode)
             {
                 _logger.LogWarning("Failed to fetch Mongolbank rates. Status: {Status}", response.StatusCode);
-                return new List<CurrencyRate>();
+                return new List<ExchangeRateInfo>();
             }
 
             var json = await response.Content.ReadAsStringAsync();
@@ -109,16 +109,16 @@ public class CurrencyService : ICurrencyService
             if (data?.Success == true && data.Data.Count > 0)
             {
                 var rateData = data.Data[0];
-                var rates = new List<CurrencyRate>
+                var rates = new List<ExchangeRateInfo>
                 {
-                    CreateCurrencyRate("USD", "АНУ-ын доллар", "US Dollar", rateData.USD, "🇺🇸"),
-                    CreateCurrencyRate("JPY", "Японы иен", "Japanese Yen", rateData.JPY, "🇯🇵"),
-                    CreateCurrencyRate("EUR", "Евро", "Euro", rateData.EUR, "🇪🇺"),
-                    CreateCurrencyRate("CNY", "БНХАУ-ын юань", "Chinese Yuan", rateData.CNY, "🇨🇳"),
-                    CreateCurrencyRate("GBP", "Английн фунт", "British Pound", rateData.GBP, "🇬🇧"),
-                    CreateCurrencyRate("KRW", "БНСУ-ын вон", "Korean Won", rateData.KRW, "🇰🇷"),
-                    CreateCurrencyRate("RUB", "ОХУ-ын рубль", "Russian Ruble", rateData.RUB, "🇷🇺"),
-                    CreateCurrencyRate("KZT", "Казахстаны тэнгэ", "Kazakh Tenge", rateData.KZT, "🇰🇿")
+                    CreateExchangeRateInfo("USD", "АНУ-ын доллар", "US Dollar", rateData.USD, "🇺🇸"),
+                    CreateExchangeRateInfo("JPY", "Японы иен", "Japanese Yen", rateData.JPY, "🇯🇵"),
+                    CreateExchangeRateInfo("EUR", "Евро", "Euro", rateData.EUR, "🇪🇺"),
+                    CreateExchangeRateInfo("CNY", "БНХАУ-ын юань", "Chinese Yuan", rateData.CNY, "🇨🇳"),
+                    CreateExchangeRateInfo("GBP", "Английн фунт", "British Pound", rateData.GBP, "🇬🇧"),
+                    CreateExchangeRateInfo("KRW", "БНСУ-ын вон", "Korean Won", rateData.KRW, "🇰🇷"),
+                    CreateExchangeRateInfo("RUB", "ОХУ-ын рубль", "Russian Ruble", rateData.RUB, "🇷🇺"),
+                    CreateExchangeRateInfo("KZT", "Казахстаны тэнгэ", "Kazakh Tenge", rateData.KZT, "🇰🇿")
                 };
 
                 // Cache for 1 hour
@@ -128,16 +128,16 @@ public class CurrencyService : ICurrencyService
                 return rates;
             }
 
-            return new List<CurrencyRate>();
+            return new List<ExchangeRateInfo>();
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error fetching Mongolbank rates");
-            return new List<CurrencyRate>();
+            return new List<ExchangeRateInfo>();
         }
     }
 
-    private CurrencyRate CreateCurrencyRate(string code, string name, string nameEn, string rateString, string flag)
+    private ExchangeRateInfo CreateExchangeRateInfo(string code, string name, string nameEn, string rateString, string flag)
     {
         // Parse rate string (e.g., "3,564.01" or "22.45")
         var rate = 0m;
@@ -147,7 +147,7 @@ public class CurrencyService : ICurrencyService
             decimal.TryParse(cleanRate, NumberStyles.Any, CultureInfo.InvariantCulture, out rate);
         }
 
-        return new CurrencyRate
+        return new ExchangeRateInfo
         {
             Code = code,
             Name = name,

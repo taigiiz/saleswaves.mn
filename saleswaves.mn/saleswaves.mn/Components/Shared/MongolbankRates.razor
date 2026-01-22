@@ -55,7 +55,7 @@
     [Parameter]
     public bool IsEnglish { get; set; } = false;
 
-    private List<CurrencyRate> rates = new();
+    private List<ExchangeRateInfo> rates = new();
     private bool isLoading = true;
     private bool showDropdown = false;
     private string yesterday = string.Empty;

@@ -53,7 +53,7 @@ public class MongolbankRateData
     public string KZT { get; set; } = string.Empty;
 }
 
-public class CurrencyRate
+public class ExchangeRateInfo
 {
     public string Code { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
