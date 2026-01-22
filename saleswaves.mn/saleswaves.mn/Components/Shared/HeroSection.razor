@@ -1,0 +1,35 @@
+<section class="hero-section">
+    <div class="hero-content">
+        <h1 class="hero-title">@Title</h1>
+        <p class="hero-subtitle">@Subtitle</p>
+        <p class="hero-description">@Description</p>
+        <div class="hero-buttons">
+            <a href="#contact" class="btn btn-primary-hero">@PrimaryButtonText</a>
+            <a href="#services" class="btn btn-secondary-hero">@SecondaryButtonText</a>
+        </div>
+    </div>
+    <div class="hero-wave">
+        <svg viewBox="0 0 1440 320" preserveAspectRatio="none">
+            <path fill="#ffffff" fill-opacity="1"
+                d="M0,160L48,165.3C96,171,192,181,288,165.3C384,149,480,107,576,112C672,117,768,171,864,186.7C960,203,1056,181,1152,154.7C1248,128,1344,96,1392,80L1440,64L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z">
+            </path>
+        </svg>
+    </div>
+</section>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public string Subtitle { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public string Description { get; set; } = string.Empty;
+
+    [Parameter]
+    public string PrimaryButtonText { get; set; } = "Contact Us";
+
+    [Parameter]
+    public string SecondaryButtonText { get; set; } = "Services";
+}
