@@ -1,6 +1,7 @@
 @using saleswaves.mn.Services
 @inject ICurrencyService CurrencyService
 @implements IDisposable
+@rendermode InteractiveServer
 
 <div class="currency-rate">
     @if (isLoading)
