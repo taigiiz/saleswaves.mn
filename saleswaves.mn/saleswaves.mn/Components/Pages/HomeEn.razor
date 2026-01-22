@@ -207,26 +207,15 @@
                     </div>
                 </div>
 
-                <div class="contact-form-wrapper">
-                    <div class="contact-form">
-                        <h3>Send us a message</h3>
-                        <form>
-                            <div class="form-group">
-                                <input type="text" placeholder="Your name" required />
-                            </div>
-                            <div class="form-group">
-                                <input type="email" placeholder="Email address" required />
-                            </div>
-                            <div class="form-group">
-                                <input type="tel" placeholder="Phone number" required />
-                            </div>
-                            <div class="form-group">
-                                <textarea rows="5" placeholder="Your message" required></textarea>
-                            </div>
-                            <button type="submit" class="btn btn-submit">Send</button>
-                        </form>
-                    </div>
-                </div>
+                <ContactForm FormTitle="Send us a message"
+                            NamePlaceholder="Your name"
+                            EmailPlaceholder="Email address"
+                            PhonePlaceholder="Phone number"
+                            MessagePlaceholder="Your message"
+                            SubmitButtonText="Send"
+                            SendingText="Sending..."
+                            SuccessMessage="Thank you! Your message has been sent successfully."
+                            ErrorMessage="Sorry, there was an error sending your message. Please try again." />
             </div>
         </div>
     </section>

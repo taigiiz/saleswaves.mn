@@ -1,6 +1,14 @@
 using saleswaves.mn.Components;
+using saleswaves.mn.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure SMTP settings
+builder.Services.Configure<SmtpSettings>(
+    builder.Configuration.GetSection("SmtpSettings"));
+
+// Register Email Service
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
