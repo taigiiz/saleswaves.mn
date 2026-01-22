@@ -1,0 +1,187 @@
+.mongolbank-rates {
+    position: relative;
+}
+
+.rates-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 25px;
+    color: white;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.rates-toggle:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-1px);
+}
+
+.rates-icon {
+    font-size: 1.2rem;
+}
+
+.rates-text {
+    font-size: 0.85rem;
+}
+
+.dropdown-arrow {
+    font-size: 0.7rem;
+    transition: transform 0.3s ease;
+}
+
+.dropdown-arrow.rotated {
+    transform: rotate(180deg);
+}
+
+.rates-dropdown {
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    right: 0;
+    min-width: 400px;
+    max-width: 450px;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.rates-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.rates-header h4 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: #2d3748;
+    font-weight: 600;
+}
+
+.rates-date {
+    margin: 0.5rem 0 0 0;
+    font-size: 0.85rem;
+    color: #718096;
+}
+
+.rates-grid {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    max-height: 450px;
+    overflow-y: auto;
+}
+
+.rate-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: #f7fafc;
+    border-radius: 10px;
+    transition: all 0.2s ease;
+}
+
+.rate-item:hover {
+    background: #edf2f7;
+    transform: translateX(5px);
+}
+
+.rate-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.rate-flag {
+    font-size: 2rem;
+    flex-shrink: 0;
+}
+
+.rate-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.rate-code {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #2d3748;
+}
+
+.rate-name {
+    font-size: 0.8rem;
+    color: #718096;
+}
+
+.rate-value {
+    display: flex;
+    align-items: baseline;
+    gap: 0.25rem;
+}
+
+.rate-amount {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #667eea;
+}
+
+.rate-currency {
+    font-size: 0.9rem;
+    color: #718096;
+    font-weight: 500;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .rates-dropdown {
+        min-width: 320px;
+        max-width: 90vw;
+        right: -1rem;
+    }
+
+    .rates-toggle {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.85rem;
+    }
+
+    .rates-text {
+        display: none;
+    }
+
+    .rate-flag {
+        font-size: 1.5rem;
+    }
+
+    .rate-code {
+        font-size: 0.9rem;
+    }
+
+    .rate-name {
+        font-size: 0.75rem;
+    }
+
+    .rate-amount {
+        font-size: 1rem;
+    }
+}
