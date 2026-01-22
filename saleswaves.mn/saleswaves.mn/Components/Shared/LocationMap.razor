@@ -13,14 +13,14 @@
                         </svg>
                     </div>
                     <div class="location-details">
-                        <h4>@OfficeTitle</h4>
+                        <h3>@OfficeTitle</h3>
                         <p>@Address</p>
                         <p>@City, @Country</p>
                     </div>
                 </div>
 
                 <div class="route-info">
-                    <h4>@RouteTitle</h4>
+                    <h3>@RouteTitle</h3>
                     <div class="route-steps">
                         <div class="route-step">
                             <span class="route-icon">🇯🇵</span>
@@ -42,6 +42,7 @@
 
             <div class="map-embed">
                 <iframe
+                    title="@($"{OfficeTitle} - Interactive Map")"
                     src="@GetMapUrl()"
                     width="100%"
                     height="450"

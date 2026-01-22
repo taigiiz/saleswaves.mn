@@ -69,10 +69,11 @@
     font-weight: 700;
 }
 
-.testimonial-info h4 {
+.testimonial-info h3 {
     font-size: 1.1rem;
     color: #2d3748;
     margin-bottom: 0.25rem;
+    font-weight: 600;
 }
 
 .testimonial-position {
