@@ -20,13 +20,36 @@
 }
 
 .navbar-brand a {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
     font-size: 1.5rem;
     font-weight: 700;
+    text-decoration: none;
+    transition: transform 0.3s ease;
+}
+
+.navbar-brand a:hover {
+    transform: scale(1.02);
+}
+
+.navbar-brand .navbar-logo {
+    width: 40px;
+    height: 40px;
+    max-width: 40px;
+    max-height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+    object-fit: contain;
+    border-radius: 8px;
+    display: block;
+}
+
+.navbar-brand span {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    text-decoration: none;
 }
 
 .navbar-menu {
