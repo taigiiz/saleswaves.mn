@@ -1,0 +1,21 @@
+{
+  "name": "Saleswaves.mn - Japanese Used Car Export Services",
+  "short_name": "Saleswaves",
+  "description": "Professional Japanese used car export and import services",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#667eea",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "favicon.png",
+      "type": "image/png",
+      "sizes": "32x32",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "automotive"],
+  "lang": "en",
+  "dir": "ltr"
+}
