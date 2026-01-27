@@ -36,8 +36,13 @@
 .navbar-brand .navbar-logo {
     width: 40px;
     height: 40px;
+    max-width: 40px;
+    max-height: 40px;
+    min-width: 40px;
+    min-height: 40px;
     object-fit: contain;
     border-radius: 8px;
+    display: block;
 }
 
 .navbar-brand span {
