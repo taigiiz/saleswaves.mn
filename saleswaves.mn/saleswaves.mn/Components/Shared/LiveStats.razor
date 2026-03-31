@@ -4,7 +4,7 @@
             <div class="live-stat-card">
                 <div class="stat-icon">🚗</div>
                 <div class="stat-content">
-                    <div class="stat-number" data-target="@VehiclesThisWeek">0</div>
+                    <div class="stat-number" data-target="@VehiclesThisWeek">@VehiclesThisWeek</div>
                     <div class="stat-label">@VehiclesLabel</div>
                 </div>
             </div>
@@ -12,7 +12,7 @@
             <div class="live-stat-card">
                 <div class="stat-icon">🚢</div>
                 <div class="stat-content">
-                    <div class="stat-number" data-target="@VehiclesInTransit">0</div>
+                    <div class="stat-number" data-target="@VehiclesInTransit">@VehiclesInTransit</div>
                     <div class="stat-label">@InTransitLabel</div>
                 </div>
             </div>
@@ -20,7 +20,7 @@
             <div class="live-stat-card">
                 <div class="stat-icon">✓</div>
                 <div class="stat-content">
-                    <div class="stat-number" data-target="@TotalDelivered">0</div>
+                    <div class="stat-number" data-target="@TotalDelivered">@TotalDelivered</div>
                     <div class="stat-label">@DeliveredLabel</div>
                 </div>
             </div>
@@ -38,13 +38,13 @@
 
 @code {
     [Parameter]
-    public int VehiclesThisWeek { get; set; } = 15;
+    public int VehiclesThisWeek { get; set; } = 54;
 
     [Parameter]
-    public int VehiclesInTransit { get; set; } = 32;
+    public int VehiclesInTransit { get; set; } = 1053;
 
     [Parameter]
-    public int TotalDelivered { get; set; } = 500;
+    public int TotalDelivered { get; set; } = 3200;
 
     [Parameter]
     public int SatisfactionRate { get; set; } = 98;
