@@ -423,6 +423,85 @@ body {
     box-shadow: 0 6px 20px rgba(220,38,38,0.5);
 }
 
+/* Logistics Partners Section */
+.partners-section {
+    padding: 80px 20px;
+    background: #f8f9fa;
+}
+
+.partners-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-top: 3rem;
+}
+
+.partner-card {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    background: white;
+    padding: 2rem;
+    border-radius: 15px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.partner-card:hover {
+    border-color: #dc2626;
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.12);
+    color: inherit;
+}
+
+.partner-icon {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    flex-shrink: 0;
+}
+
+.partner-icon svg {
+    width: 30px;
+    height: 30px;
+}
+
+.partner-info {
+    flex: 1;
+}
+
+.partner-name {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #2d3748;
+    margin-bottom: 0.25rem;
+}
+
+.partner-url {
+    font-size: 0.9rem;
+    color: #dc2626;
+}
+
+.partner-arrow {
+    font-size: 1.4rem;
+    color: #cbd5e1;
+    transition: color 0.3s ease, transform 0.3s ease;
+    display: inline-block;
+}
+
+.partner-card:hover .partner-arrow {
+    color: #dc2626;
+    transform: translateX(5px);
+}
+
 /* About Section */
 .about-section {
     padding: 100px 20px;
@@ -748,7 +827,8 @@ body {
     }
 
     .about-grid,
-    .contact-grid {
+    .contact-grid,
+    .partners-grid {
         grid-template-columns: 1fr;
         gap: 2rem;
     }
