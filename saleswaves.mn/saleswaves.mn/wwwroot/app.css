@@ -89,14 +89,14 @@ body {
 }
 
 .hero-title {
-    font-size: 4rem;
+    font-size: clamp(1.8rem, 5vw, 4rem);
     font-weight: 800;
     margin-bottom: 1rem;
     text-shadow: 2px 2px 20px rgba(0,0,0,0.4);
 }
 
 .hero-subtitle {
-    font-size: 1.8rem;
+    font-size: clamp(1.1rem, 3vw, 1.8rem);
     font-weight: 300;
     margin-bottom: 1rem;
     opacity: 0.95;
@@ -201,7 +201,7 @@ body {
 
 .services-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
     gap: 2rem;
     margin-top: 3rem;
 }
@@ -765,6 +765,10 @@ body {
         max-width: 100%;
     }
 
+    .logistics-desc br {
+        display: none;
+    }
+
     .about-stat-row {
         gap: 1.5rem;
     }
@@ -775,6 +779,87 @@ body {
 
     .about-stat-number-lg {
         font-size: 2.5rem;
+    }
+}
+
+/* Small phone breakpoint */
+@media (max-width: 480px) {
+    .hero-content {
+        padding: 30px 16px;
+    }
+
+    .hero-description {
+        font-size: 0.95rem;
+        max-width: 100%;
+    }
+
+    .hero-buttons {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .btn-primary-hero,
+    .btn-secondary-hero {
+        padding: 12px 24px;
+        font-size: 1rem;
+        width: 100%;
+        text-align: center;
+    }
+
+    .section-title {
+        font-size: 1.8rem;
+    }
+
+    .section-subtitle {
+        font-size: 1rem;
+    }
+
+    .services-section {
+        padding: 60px 16px;
+    }
+
+    .service-card {
+        padding: 1.75rem;
+    }
+
+    .logistics-title {
+        font-size: 1.6rem;
+    }
+
+    .logistics-banner {
+        min-height: 360px;
+    }
+
+    .logistics-banner-inner {
+        padding: 40px 16px;
+    }
+
+    .logistics-desc {
+        font-size: 0.95rem;
+    }
+
+    .about-section {
+        padding: 60px 16px;
+    }
+
+    .about-features {
+        grid-template-columns: 1fr;
+    }
+
+    .about-image-placeholder {
+        height: 300px;
+    }
+
+    .about-stat-number {
+        font-size: 1.6rem;
+    }
+
+    .about-stat-number-lg {
+        font-size: 2rem;
+    }
+
+    .about-stat-row {
+        gap: 1rem;
     }
 }
 
