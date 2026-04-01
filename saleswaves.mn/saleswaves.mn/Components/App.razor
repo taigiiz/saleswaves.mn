@@ -1,4 +1,8 @@
-﻿<!DOCTYPE html>
+﻿@code {
+    private static readonly string _v = typeof(App).Assembly.GetName().Version?.ToString(3) ?? "1.0.0";
+}
+
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -20,8 +24,8 @@
 
     <!-- Stylesheets -->
     <link rel="stylesheet" href="bootstrap/bootstrap.min.css" />
-    <link rel="stylesheet" href="app.css" />
-    <link rel="stylesheet" href="saleswaves.mn.styles.css" />
+    <link rel="stylesheet" href="@($"app.css?v={_v}")" />
+    <link rel="stylesheet" href="@($"saleswaves.mn.styles.css?v={_v}")" />
 
     <HeadOutlet />
 </head>
