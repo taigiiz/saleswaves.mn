@@ -1,478 +1,534 @@
-// Saleswaves — scroll-driven 3D journey: Japan auction yard → port → sea → rail → Ulaanbaatar.
+// Saleswaves — scroll-driven 3D journey on a relief globe built from real data:
+// NASA Blue Marble imagery + SRTM/GMTED/ETOPO1 elevation, and the actual route
+// Japan → Tianjin → Zamyn-Uud → Ulaanbaatar. Textures are baked by tools/build-map.mjs.
 import * as THREE from 'three';
-import { Sky } from 'three/addons/Sky.js';
-import { RGBELoader } from 'three/addons/RGBELoader.js';
-import { RoomEnvironment } from 'three/addons/RoomEnvironment.js';
-import * as T from './textures.js';
-import {
-  makeMaterials, heroCar, parkedCars, containerField, heroContainer, CONT, CONTAINER_COLORS,
-  ship as makeShip, SHIP, crane as makeCrane, train as makeTrain, TRAIN, track, buildings,
-} from './models.js';
+import * as G from './geo.js';
 
 const S = (window.SWState = window.SWState || {});
 const clamp01 = (v) => Math.min(1, Math.max(0, v));
 const seg = (p, a, b) => clamp01((p - a) / (b - a));
-const ease = (t) => t * t * t * (t * (t * 6 - 15) + 10);
+const smooth = (t) => t * t * (3 - 2 * t);
 const lerp = (a, b, t) => a + (b - a) * t;
-const V = (x, y, z) => new THREE.Vector3(x, y, z);
+const D2R = Math.PI / 180;
 
-export function initJourney(canvas, { onReady, onProgress } = {}) {
+/* ------------------------------------------------------------------ */
+/* Shaders                                                             */
+/* ------------------------------------------------------------------ */
+const SURF_VERT = /* glsl */`
+attribute vec3 aLL; // lon, lat, mercator y
+varying vec2 vUv; varying vec3 vW; varying vec3 vLL;
+void main() {
+  vUv = uv; vLL = aLL;
+  vec4 w = modelMatrix * vec4(position, 1.0);
+  vW = w.xyz;
+  gl_Position = projectionMatrix * viewMatrix * w;
+}`;
+
+// Baked relief colour + live water glint, graticule and aerial perspective.
+const SURF_FRAG = /* glsl */`
+uniform sampler2D map; uniform sampler2D uNoise;
+uniform vec3 uSun; uniform vec3 uHaze; uniform vec3 uDeep;
+uniform float uTime; uniform float uFeather; uniform vec4 uHole;
+varying vec2 vUv; varying vec3 vW; varying vec3 vLL;
+void main() {
+  float alpha = 1.0;
+  vec3 n = normalize(vW);
+  vec3 v = normalize(cameraPosition - vW);
+#if defined(IS_BASE)
+  vec3 c = uDeep;
+  float water = 1.0;
+#else
+  vec2 fe = min(vUv, 1.0 - vUv);
+  #if defined(IS_FAR)
+    vec2 pu = vec2((vLL.x - uHole.x) / (uHole.y - uHole.x), (uHole.z - vLL.z) / (uHole.z - uHole.w));
+    vec2 pe = min(pu, 1.0 - pu);
+    if (min(pe.x, pe.y) > uFeather * 1.15) discard; // the detailed patch covers this area
+    alpha = smoothstep(0.0, 0.05, min(fe.x, fe.y));
+  #else
+    alpha = smoothstep(0.0, uFeather, min(fe.x, fe.y));
+  #endif
+  vec3 c = texture2D(map, vUv).rgb;
+  float water = smoothstep(0.0, 0.03, c.b - max(c.r, c.g) * 1.12);
+#endif
+  // sun glint + sky reflection on water
+  vec2 q = vLL.xy * 0.37;
+  vec2 wn = texture2D(uNoise, q + uTime * vec2(0.006, 0.004)).xy + texture2D(uNoise, q * 3.17 + vec2(0.31, 0.67) - uTime * vec2(0.005, 0.008)).xy - 1.0;
+  vec3 e = normalize(cross(vec3(0.0, 1.0, 0.0), n));
+  vec3 nw = normalize(n + (e * wn.x + cross(n, e) * wn.y) * 0.05);
+  float ndv = max(dot(n, v), 0.0);
+  float spec = pow(max(dot(reflect(-uSun, nw), v), 0.0), 38.0);
+  float fres = pow(1.0 - ndv, 4.0);
+  c += water * (spec * vec3(1.0, 0.93, 0.82) * 0.34 + fres * vec3(0.16, 0.26, 0.4) * 0.45);
+  // graticule every 10 degrees
+  vec2 gq = vLL.xy / 10.0;
+  vec2 gl = abs(fract(gq - 0.5) - 0.5) / fwidth(gq);
+  c += (1.0 - min(min(gl.x, gl.y), 1.0)) * 0.055;
+  // aerial perspective toward the limb
+  float hz = pow(1.0 - ndv, 2.4);
+  c = mix(c, uHaze, clamp(hz * 0.95, 0.0, 0.9));
+  gl_FragColor = vec4(c, alpha);
+  #include <colorspace_fragment>
+}`;
+
+const ATMO_VERT = /* glsl */`
+varying vec3 vN; varying vec3 vP;
+void main() {
+  vN = normalize(normalMatrix * normal);
+  vec4 mv = modelViewMatrix * vec4(position, 1.0);
+  vP = mv.xyz;
+  gl_Position = projectionMatrix * mv;
+}`;
+const ATMO_FRAG = /* glsl */`
+uniform vec3 uColor; uniform float uEdge;
+varying vec3 vN; varying vec3 vP;
+void main() {
+  float d = -dot(normalize(vN), normalize(-vP));
+  float a = pow(clamp(d / uEdge, 0.0, 1.0), 2.6);
+  gl_FragColor = vec4(uColor * a, a);
+  #include <colorspace_fragment>
+}`;
+
+// Screen-space constant-width lines (route, arcs, border).
+const LINE_VERT = /* glsl */`
+attribute vec3 aPrev; attribute vec3 aNext; attribute float aSide; attribute float aT;
+uniform vec2 uRes; uniform float uWidth;
+varying float vT; varying float vSide;
+void main() {
+  mat4 m = projectionMatrix * modelViewMatrix;
+  vec4 c = m * vec4(position, 1.0), p = m * vec4(aPrev, 1.0), n = m * vec4(aNext, 1.0);
+  vec2 d = (n.xy / n.w - p.xy / p.w) * uRes;
+  d = normalize(d + vec2(1e-6, 0.0));
+  c.xy += vec2(-d.y, d.x) * aSide * uWidth / uRes * c.w;
+  gl_Position = c; vT = aT; vSide = aSide;
+}`;
+const LINE_FRAG = /* glsl */`
+uniform vec3 uColor; uniform vec3 uRestColor; uniform float uHead; uniform float uRest; uniform float uDashes;
+uniform float uOpacity; uniform float uGlow; uniform float uPulse; uniform float uPulseN; uniform float uTime;
+varying float vT; varying float vSide;
+void main() {
+  float s = abs(vSide);
+  float done = step(vT, uHead);
+  float aa = mix(1.0 - smoothstep(0.5, 1.0, s), pow(1.0 - s, 2.0), uGlow);
+  float dash = step(0.5, fract(vT * uDashes));
+  float a = mix(uRest * dash * (1.0 - uGlow), 1.0, done) * aa * uOpacity;
+  vec3 col = mix(uRestColor, uColor, done);
+  float tip = smoothstep(uHead - 0.035, uHead, vT) * done;
+  col = mix(col, vec3(1.0, 0.86, 0.8), tip * 0.7);
+  float pulse = smoothstep(0.9, 1.0, fract(vT * uPulseN - uTime * 0.22)) * uPulse * done;
+  col += pulse * 0.9;
+  if (a < 0.003) discard;
+  gl_FragColor = vec4(col, a);
+  #include <colorspace_fragment>
+}`;
+
+/* ------------------------------------------------------------------ */
+/* Helpers                                                             */
+/* ------------------------------------------------------------------ */
+function loadTexture(url, renderer) {
+  return new Promise((res, rej) => new THREE.TextureLoader().load(url, (t) => {
+    t.colorSpace = THREE.SRGBColorSpace;
+    t.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+    t.minFilter = THREE.LinearMipmapLinearFilter; t.generateMipmaps = true;
+    res(t);
+  }, undefined, () => rej(new Error('texture ' + url))));
+}
+
+// Height map: 0 = sea, 16..255 = sqrt-encoded land elevation (0..6000 m).
+function loadHeight(url) {
+  return new Promise((res, rej) => {
+    const img = new Image();
+    img.onload = () => {
+      const c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight;
+      const g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(img, 0, 0);
+      const px = g.getImageData(0, 0, c.width, c.height).data, w = c.width, h = c.height, m = new Float32Array(w * h);
+      for (let i = 0; i < m.length; i++) { const v = px[i * 4]; m[i] = v < 12 ? 0 : ((v - 16) / 239) ** 2 * 6000; }
+      const P = G.PATCH, yT = G.mercY(P.lat1), yB = G.mercY(P.lat0);
+      // metres above sea level at (lon, lat); 0 outside the detailed patch
+      res((lon, lat) => {
+        const fx = (lon - P.lon0) / (P.lon1 - P.lon0) * (w - 1), fy = (yT - G.mercY(lat)) / (yT - yB) * (h - 1);
+        if (fx < 0 || fy < 0 || fx > w - 1 || fy > h - 1) return 0;
+        const x = Math.min(w - 2, fx | 0), y = Math.min(h - 2, fy | 0), u = fx - x, v = fy - y, k = y * w + x;
+        return lerp(lerp(m[k], m[k + 1], u), lerp(m[k + w], m[k + w + 1], u), v);
+      });
+    };
+    img.onerror = () => rej(new Error('height map'));
+    img.src = url;
+  });
+}
+
+// Small tileable gradient noise used to break up the sun glint on water.
+function noiseTexture() {
+  const n = 256, h = new Float32Array(n * n), d = new Uint8Array(n * n * 4);
+  let s = 7; const r = () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
+  // smooth random field: a few octaves of wrapped value noise
+  for (let o = 0; o < 4; o++) {
+    const c = 8 << o, g = new Float32Array(c * c).map(r), a = 1 / (1 << o);
+    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+      const fx = x / n * c, fy = y / n * c, x0 = fx | 0, y0 = fy | 0, u = smooth(fx - x0), v = smooth(fy - y0), x1 = (x0 + 1) % c, y1 = (y0 + 1) % c;
+      h[y * n + x] += a * lerp(lerp(g[y0 * c + x0], g[y0 * c + x1], u), lerp(g[y1 * c + x0], g[y1 * c + x1], u), v);
+    }
+  }
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+    const i = (y * n + x) * 4, dx = h[y * n + (x + 1) % n] - h[y * n + (x + n - 1) % n], dy = h[((y + 1) % n) * n + x] - h[((y + n - 1) % n) * n + x];
+    d[i] = 127.5 + Math.max(-127, Math.min(127, dx * 900)); d[i + 1] = 127.5 + Math.max(-127, Math.min(127, dy * 900)); d[i + 2] = 255; d[i + 3] = 255;
+  }
+  const t = new THREE.DataTexture(d, n, n, THREE.RGBAFormat);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping; t.magFilter = THREE.LinearFilter; t.minFilter = THREE.LinearMipmapLinearFilter; t.generateMipmaps = true; t.needsUpdate = true;
+  return t;
+}
+
+/** Grid mesh over a lon / Web-Mercator rectangle, wrapped onto the globe. alt(lon, lat, u, v) in scene units. */
+function sphereGrid(B, nx, ny, alt) {
+  const yT = G.mercY(B.lat1), yB = G.mercY(B.lat0), nv = (nx + 1) * (ny + 1);
+  const pos = new Float32Array(nv * 3), uv = new Float32Array(nv * 2), ll = new Float32Array(nv * 3), v3 = new THREE.Vector3();
+  let k = 0;
+  for (let j = 0; j <= ny; j++) {
+    const v = j / ny, my = lerp(yT, yB, v), lat = G.invMercY(my);
+    for (let i = 0; i <= nx; i++, k++) {
+      const u = i / nx, lon = lerp(B.lon0, B.lon1, u);
+      G.toVec(lon, lat, alt ? alt(lon, lat, u, v) : 0, v3);
+      pos[k * 3] = v3.x; pos[k * 3 + 1] = v3.y; pos[k * 3 + 2] = v3.z;
+      uv[k * 2] = u; uv[k * 2 + 1] = 1 - v;
+      ll[k * 3] = lon; ll[k * 3 + 1] = lat; ll[k * 3 + 2] = my;
+    }
+  }
+  const idx = new Uint32Array(nx * ny * 6); let q = 0;
+  for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
+    const a = j * (nx + 1) + i, b = a + 1, c = a + nx + 1, d = c + 1;
+    idx[q++] = a; idx[q++] = c; idx[q++] = b; idx[q++] = b; idx[q++] = c; idx[q++] = d;
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  g.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+  g.setAttribute('aLL', new THREE.BufferAttribute(ll, 3));
+  g.setIndex(new THREE.BufferAttribute(idx, 1));
+  g.computeBoundingSphere();
+  return g;
+}
+
+/** Ribbon geometry for LINE_VERT. pts: Vector3[], ts: per-point parameter. Several strips can be merged via `breaks`. */
+function lineGeometry(strips) {
+  let n = 0; strips.forEach((s) => { n += s.pts.length; });
+  const pos = new Float32Array(n * 6), prev = new Float32Array(n * 6), next = new Float32Array(n * 6), side = new Float32Array(n * 2), tt = new Float32Array(n * 2);
+  const idx = []; let k = 0;
+  for (const { pts, ts } of strips) {
+    for (let i = 0; i < pts.length; i++, k++) {
+      const p = pts[i], a = pts[Math.max(0, i - 1)], b = pts[Math.min(pts.length - 1, i + 1)];
+      for (let s = 0; s < 2; s++) {
+        const o = (k * 2 + s) * 3;
+        pos[o] = p.x; pos[o + 1] = p.y; pos[o + 2] = p.z;
+        prev[o] = a.x; prev[o + 1] = a.y; prev[o + 2] = a.z;
+        next[o] = b.x; next[o + 1] = b.y; next[o + 2] = b.z;
+        side[k * 2 + s] = s ? 1 : -1; tt[k * 2 + s] = ts[i];
+      }
+      if (i > 0) { const c = (k - 1) * 2, d = k * 2; idx.push(c, c + 1, d, d, c + 1, d + 1); }
+    }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  g.setAttribute('aPrev', new THREE.BufferAttribute(prev, 3));
+  g.setAttribute('aNext', new THREE.BufferAttribute(next, 3));
+  g.setAttribute('aSide', new THREE.BufferAttribute(side, 1));
+  g.setAttribute('aT', new THREE.BufferAttribute(tt, 1));
+  g.setIndex(idx);
+  g.computeBoundingSphere();
+  return g;
+}
+
+// Monotone-ish cubic through scalar keys [[p, v], …] with non-uniform spacing.
+function spline(keys, col, p) {
+  const n = keys.length;
+  if (p <= keys[0][0]) return keys[0][col];
+  if (p >= keys[n - 1][0]) return keys[n - 1][col];
+  let i = 0; while (i < n - 2 && p > keys[i + 1][0]) i++;
+  const p0 = keys[i][0], p1 = keys[i + 1][0], h = p1 - p0, t = (p - p0) / h;
+  const y0 = keys[i][col], y1 = keys[i + 1][col];
+  const m = (a, b) => (keys[b][col] - keys[a][col]) / (keys[b][0] - keys[a][0]);
+  const d = m(i, i + 1);
+  let m0 = i > 0 ? (m(i - 1, i) + d) / 2 : d, m1 = i < n - 2 ? (d + m(i + 1, i + 2)) / 2 : d;
+  // limit overshoot
+  if (d === 0) { m0 = 0; m1 = 0; } else { const a = m0 / d, b = m1 / d; if (a < 0) m0 = 0; if (b < 0) m1 = 0; const sq = a * a + b * b; if (sq > 9) { const tau = 3 / Math.sqrt(sq); m0 = tau * a * d; m1 = tau * b * d; } }
+  const t2 = t * t, t3 = t2 * t;
+  return (2 * t3 - 3 * t2 + 1) * y0 + (t3 - 2 * t2 + t) * h * m0 + (-2 * t3 + 3 * t2) * y1 + (t3 - t2) * h * m1;
+}
+
+/* ------------------------------------------------------------------ */
+/* Journey                                                             */
+/* ------------------------------------------------------------------ */
+export function initJourney(canvas, { onReady, onProgress, onError } = {}) {
+  const host = canvas.parentElement;
   const small = Math.min(innerWidth, innerHeight) < 700;
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, small ? 1.5 : 1.75));
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 0.62;
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, small ? 1.5 : 2));
+  renderer.setClearColor(0x050a13, 1);
   const scene = new THREE.Scene();
-  scene.fog = new THREE.Fog(0xc8d2da, 180, 1700);
-  const camera = new THREE.PerspectiveCamera(36, 1, 0.3, 8000);
-
-  /* ---------------- Environment & light ---------------- */
-  const pmrem = new THREE.PMREMGenerator(renderer);
-  scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-  scene.environmentIntensity = 0.55;
-  new RGBELoader().load('assets/env/sky_1k.hdr', (hdr) => {
-    hdr.mapping = THREE.EquirectangularReflectionMapping;
-    scene.environment = pmrem.fromEquirectangular(hdr).texture;
-    hdr.dispose();
-    scene.environmentIntensity = 0.7;
-  });
-
-  const sky = new Sky();
-  sky.scale.setScalar(30000);
-  const su = sky.material.uniforms;
-  su.turbidity.value = 4.5; su.rayleigh.value = 1.1; su.mieCoefficient.value = 0.004; su.mieDirectionalG.value = 0.86;
-  scene.add(sky);
-
-  const sun = new THREE.DirectionalLight(0xffffff, 2.8);
-  sun.castShadow = true;
-  sun.shadow.mapSize.set(small ? 1024 : 2048, small ? 1024 : 2048);
-  sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.04;
-  scene.add(sun, sun.target);
-  const hemi = new THREE.HemisphereLight(0xcfdcff, 0x5d5446, 0.35);
-  scene.add(hemi);
-
-  const M = makeMaterials();
-
-  /* ---------------- Ground, water, terrain ---------------- */
-  const grassTex = T.grass();
-  const landMat = new THREE.MeshStandardMaterial({ color: 0x9a9a86, map: grassTex, roughness: 1 });
-  const land = new THREE.Mesh(new THREE.PlaneGeometry(3000, 3045), landMat);
-  land.rotation.x = -Math.PI / 2; land.position.set(-1500, -0.03, 0); land.receiveShadow = true;
-  scene.add(land);
-
-  const concreteTex = T.concrete();
-  const concreteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, map: concreteTex, roughness: 0.92 });
-  const slab = (x0, x1, z0, z1) => {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, 3.3, z1 - z0), concreteMat);
-    m.position.set((x0 + x1) / 2, -1.65, (z0 + z1) / 2); m.receiveShadow = true; scene.add(m);
-    // concrete texture repeat in world metres
-    return m;
-  };
-  slab(-80, 0, -120, 120);
-  slab(-80, 0, 1285, 1548);
-  const wall = new THREE.Mesh(new THREE.BoxGeometry(1.2, 3.4, 3050), new THREE.MeshStandardMaterial({ color: 0x77736b, roughness: 1 }));
-  wall.position.set(-0.6, -1.7, 22); scene.add(wall);
-
-  const asphaltTex = T.asphalt();
-  const asphaltMat = new THREE.MeshStandardMaterial({ map: asphaltTex, roughness: 0.95 });
-  const patch = (x0, x1, z0, z1, y = 0.012) => {
-    const g = new THREE.PlaneGeometry(x1 - x0, z1 - z0);
-    const uv = g.getAttribute('uv');
-    for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * (x1 - x0) / 25, uv.getY(i) * (z1 - z0) / 25);
-    const m = new THREE.Mesh(g, asphaltMat);
-    m.rotation.x = -Math.PI / 2; m.position.set((x0 + x1) / 2, y, (z0 + z1) / 2); m.receiveShadow = true; scene.add(m);
-    return m;
-  };
-  asphaltTex.repeat.set(1, 1);
-  patch(-66, -16, -100, -24);  // auction yard
-  patch(-14, -4, -100, 20);    // quay lane
-  patch(-46, -12, 2950, 3060); // UB terminal
-
-  // painted markings (instanced)
-  const lineMat = new THREE.MeshStandardMaterial({ color: 0xe8e6df, roughness: 0.8 });
-  const lines = [];
-  for (let r = 0; r < 4; r++) for (let i = 0; i <= 26; i++) lines.push([-22 - r * 11.5, -96 + i * 2.75, 0, 4.8]);
-  for (let i = 0; i < 24; i++) lines.push([-9, -98 + i * 5, Math.PI / 2, 2.4]);
-  const lineIM = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.12, 1).rotateX(-Math.PI / 2), lineMat, lines.length);
-  const d0 = new THREE.Object3D();
-  lines.forEach(([x, z, ry, len], i) => { d0.position.set(x - (ry ? 0 : 2.4), 0.02, z); d0.rotation.set(0, ry ? 0 : Math.PI / 2, 0); d0.scale.set(1, 1, len); d0.updateMatrix(); lineIM.setMatrixAt(i, d0.matrix); });
-  lineIM.receiveShadow = true; scene.add(lineIM);
-
-  // water
-  const waterN = T.waterNormal();
-  waterN.repeat.set(260, 190);
-  const waterMat = new THREE.MeshPhysicalMaterial({ color: 0x14303f, roughness: 0.07, metalness: 0, normalMap: waterN, normalScale: new THREE.Vector2(0.45, 0.45), envMapIntensity: 1.2 });
-  const water = new THREE.Mesh(new THREE.PlaneGeometry(5000, 3700), waterMat);
-  water.rotation.x = -Math.PI / 2; water.position.set(1000, -3, -200); water.receiveShadow = true;
-  scene.add(water);
-
-  // terrain (steppe, mountains near Ulaanbaatar)
-  const hash = (x, y) => { const s = Math.sin(x * 127.1 + y * 311.7) * 43758.5453; return s - Math.floor(s); };
-  const vnoise = (x, y) => {
-    const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi;
-    const u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
-    const a = hash(xi, yi), b = hash(xi + 1, yi), c = hash(xi, yi + 1), d = hash(xi + 1, yi + 1);
-    return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
-  };
-  const fbm = (x, y) => { let s = 0, a = 0.5, f = 1; for (let i = 0; i < 5; i++) { s += a * vnoise(x * f, y * f); f *= 2.03; a *= 0.5; } return s; };
-  const TZ0 = 1545, TZ1 = 4900, TX0 = -1800, TX1 = 1800;
-  const tGeo = new THREE.PlaneGeometry(TX1 - TX0, TZ1 - TZ0, small ? 160 : 260, small ? 160 : 260);
-  tGeo.rotateX(-Math.PI / 2);
-  tGeo.translate((TX0 + TX1) / 2, 0, (TZ0 + TZ1) / 2);
-  const tp = tGeo.getAttribute('position');
-  const tcol = [];
-  const dry = new THREE.Color('#b9a679'), green = new THREE.Color('#8f9262'), rock = new THREE.Color('#77705a'), dirt = new THREE.Color('#8f7f60');
-  const ctmp = new THREE.Color();
-  for (let i = 0; i < tp.count; i++) {
-    const x = tp.getX(i), z = tp.getZ(i);
-    const corr = THREE.MathUtils.smoothstep(Math.abs(x + 9), 22, 260);
-    let h = corr * (fbm(x / 420, z / 420) * 34 - 10 + fbm(x / 90, z / 90) * 5);
-    const ridge = THREE.MathUtils.smoothstep(z, 3500, 4300);
-    h += ridge * (fbm(x / 260 + 7, z / 260) * 260 + 40) * THREE.MathUtils.smoothstep(Math.abs(x + 9), 40, 400);
-    const ub = (1 - THREE.MathUtils.smoothstep(Math.hypot(x + 480, z - 3340), 380, 640));
-    h = lerp(h, 0, ub);
-    if (x > 0) h = lerp(-6, h, THREE.MathUtils.smoothstep(z, 1555, 1680));
-    h = Math.max(h, -6);
-    tp.setY(i, h);
-    const n = fbm(x / 140, z / 140);
-    ctmp.copy(dry).lerp(green, THREE.MathUtils.smoothstep(n, 0.35, 0.75) * 0.7);
-    ctmp.lerp(rock, clamp01((h - 30) / 160));
-    if (Math.abs(x + 9) < 8) ctmp.lerp(dirt, 0.5);
-    tcol.push(ctmp.r, ctmp.g, ctmp.b);
-  }
-  tGeo.setAttribute('color', new THREE.Float32BufferAttribute(tcol, 3));
-  tGeo.computeVertexNormals();
-  const terrain = new THREE.Mesh(tGeo, new THREE.MeshStandardMaterial({ vertexColors: true, map: grassTex, roughness: 1 }));
-  terrain.receiveShadow = true;
-  scene.add(terrain);
-
-  /* ---------------- Port A (Japan) ---------------- */
-  const rnd = T.rng(2024);
-  const pick = (arr, w) => { let r = rnd() * w.reduce((a, b) => a + b, 0); for (let i = 0; i < arr.length; i++) { r -= w[i]; if (r <= 0) return arr[i]; } return arr[0]; };
-  const carColors = ['#ecebe6', '#b9bcc0', '#17191c', '#55595f', '#22324f', '#5a1c22', '#cbbfa6', '#8fa6b8'];
-  const carW = [36, 20, 15, 10, 6, 4, 5, 4];
-  const yard = [];
-  for (let r = 0; r < 4; r++) {
-    for (let side = 0; side < 2; side++) {
-      for (let i = 0; i < 26; i++) {
-        if (rnd() < 0.08) continue;
-        const x = -22 - r * 11.5 - (side ? 5.6 : 0) - 2.4 + (side ? 0 : 0);
-        yard.push({ x: -22 - r * 11.5 - (side ? 7.4 : 2.4), z: -94.6 + i * 2.75, ry: side ? Math.PI / 2 : -Math.PI / 2, type: pick(['hatch', 'sedan', 'suv'], [50, 25, 25]), color: pick(carColors, carW) });
-      }
-    }
-  }
-  scene.add(parkedCars(M, small ? yard.filter((_, i) => i % 2 === 0) : yard));
-
-  const stacks = [];
-  const stackBlock = (x0, z0, rows, bays, maxT, zStep = 12.9) => {
-    for (let b = 0; b < bays; b++) for (let r = 0; r < rows; r++) {
-      const t = 1 + Math.floor(rnd() * maxT);
-      for (let k = 0; k < t; k++) stacks.push({ x: x0 - r * 2.6, y: k * CONT.H, z: z0 + b * zStep, color: CONTAINER_COLORS[(rnd() * CONTAINER_COLORS.length) | 0] });
-    }
-  };
-  stackBlock(-24, -12, 6, 8, 4);
-  stackBlock(-44, -12, 6, 8, 4);
-  stackBlock(-64, -12, 5, 8, 3);
-  stackBlock(-24, 1300, 6, 9, 3, 13.2);
-  stackBlock(-44, 1300, 6, 9, 4, 13.2);
-  scene.add(containerField(M, stacks));
-
-  // quay furniture
-  const bollards = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.22, 0.28, 0.7, 12), M.darkSteel, 30);
-  for (let i = 0; i < 30; i++) { d0.position.set(-0.9, 0.35, i < 15 ? -105 + i * 15 : 1295 + (i - 15) * 16); d0.rotation.set(0, 0, 0); d0.scale.set(1, 1, 1); d0.updateMatrix(); bollards.setMatrixAt(i, d0.matrix); }
-  bollards.castShadow = true; scene.add(bollards);
-  const fenders = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.6, 0.6, 2.2, 16).rotateZ(Math.PI / 2).rotateY(Math.PI / 2), M.tire, 30);
-  for (let i = 0; i < 30; i++) { d0.position.set(0.2, -1.6, i < 15 ? -100 + i * 15 : 1300 + (i - 15) * 16); d0.updateMatrix(); fenders.setMatrixAt(i, d0.matrix); }
-  scene.add(fenders);
-  // light masts
-  const mastGeo = new THREE.CylinderGeometry(0.25, 0.45, 32, 10); mastGeo.translate(0, 16, 0);
-  const masts = new THREE.InstancedMesh(mastGeo, M.steel, 8);
-  [[-36, -104], [-60, -104], [-60, -40], [-34, 40], [-54, 40], [-34, 1350], [-54, 1450], [-30, 3010]].forEach(([x, z], i) => { d0.position.set(x, 0, z); d0.updateMatrix(); masts.setMatrixAt(i, d0.matrix); });
-  masts.castShadow = true; scene.add(masts);
-
-  const craneA = makeCrane(M); scene.add(craneA);
-  const craneB = makeCrane(M); craneB.position.z = 1400; scene.add(craneB);
-
-  /* ---------------- Ship ---------------- */
-  const ship = makeShip(M);
-  ship.position.set(14, -3, -5.2);
-  scene.add(ship);
-  const wake = new THREE.Mesh(new THREE.PlaneGeometry(26, 170), new THREE.MeshBasicMaterial({ map: T.wakeTexture(), transparent: true, depthWrite: false, opacity: 0, fog: true }));
-  wake.rotation.x = -Math.PI / 2; wake.position.y = -2.96;
-  scene.add(wake);
-
-  /* ---------------- Rail + train ---------------- */
-  scene.add(track(M, 1290, 3260, -9));
-  const train = makeTrain(M, CONTAINER_COLORS);
-  train.position.set(-9, 0.63, 1417.3);
-  scene.add(train);
-  const W0 = train.userData.wagonZ[0];
-  // power poles along the line
-  const poleGeo = new THREE.CylinderGeometry(0.12, 0.16, 9, 6); poleGeo.translate(0, 4.5, 0);
-  const cross = new THREE.BoxGeometry(1.8, 0.12, 0.12); cross.translate(0, 8.4, 0);
-  const poleMat = new THREE.MeshStandardMaterial({ color: 0x5b4a3a, roughness: 0.9 });
-  const poles = new THREE.InstancedMesh(poleGeo, poleMat, 40), crosses = new THREE.InstancedMesh(cross, poleMat, 40);
-  for (let i = 0; i < 40; i++) { d0.position.set(-17, 0, 1600 + i * 55); d0.updateMatrix(); poles.setMatrixAt(i, d0.matrix); crosses.setMatrixAt(i, d0.matrix); }
-  poles.castShadow = true; scene.add(poles, crosses);
-  // gers on the steppe
-  const gerBody = new THREE.CylinderGeometry(3.2, 3.2, 2.1, 24); gerBody.translate(0, 1.05, 0);
-  const gerRoof = new THREE.ConeGeometry(3.45, 1.4, 24); gerRoof.translate(0, 2.8, 0);
-  const gerMat = new THREE.MeshStandardMaterial({ color: 0xece7dc, roughness: 0.95 });
-  const gerSpots = [[-120, 1900], [-128, 1912], [160, 2250], [-260, 2480], [-250, 2470], [90, 2720]];
-  const gb = new THREE.InstancedMesh(gerBody, gerMat, gerSpots.length), gr = new THREE.InstancedMesh(gerRoof, gerMat, gerSpots.length);
-  gerSpots.forEach(([x, z], i) => { d0.position.set(x, 0, z); d0.updateMatrix(); gb.setMatrixAt(i, d0.matrix); gr.setMatrixAt(i, d0.matrix); });
-  gb.castShadow = gr.castShadow = true; scene.add(gb, gr);
-  // terrain heights under gers (approximate: steppe near track is gentle) — raise slightly
-  gb.position.y = gr.position.y = 0;
-
-  /* ---------------- Ulaanbaatar ---------------- */
-  const city = [];
-  const r2 = T.rng(9);
-  for (let i = 0; i < 70; i++) {
-    const x = -230 - r2() * 560, z = 3120 + r2() * 460;
-    const tall = r2() < 0.12;
-    city.push({ x, z, w: 20 + r2() * 30, d: 16 + r2() * 24, h: tall ? 55 + r2() * 50 : 12 + r2() * 30 });
-  }
-  city.push({ x: -300, z: 3180, w: 30, d: 30, h: 105 });
-  scene.add(buildings(city, 5));
-  const lampGeo = new THREE.CylinderGeometry(0.08, 0.12, 7, 8); lampGeo.translate(0, 3.5, 0);
-  const lamps = new THREE.InstancedMesh(lampGeo, M.darkSteel, 6);
-  for (let i = 0; i < 6; i++) { d0.position.set(-14, 0, 2965 + i * 16); d0.updateMatrix(); lamps.setMatrixAt(i, d0.matrix); }
-  scene.add(lamps);
-
-  /* ---------------- Hero objects ---------------- */
-  const car = heroCar(M, 0x8c1c22, 'hatch');
-  scene.add(car);
-  const cont = heroContainer(M);
-  scene.add(cont);
-  const contUB = heroContainer(M);
-  contUB.position.set(-26, 0.02, 2996);
-  scene.add(contUB);
-
-  /* ---------------- Timeline ---------------- */
-  const P = {
-    yardEnd: 0.10, driveEnd: 0.195, doorsClose: 0.214,
-    lift0: 0.22, lift1: 0.27, slide1: 0.31, lower1: 0.355,
-    sail0: 0.36, sail1: 0.555,
-    bLift0: 0.565, bLift1: 0.595, bSlide1: 0.625, bLower1: 0.66,
-    rail0: 0.665, rail1: 0.85,
-    swap: 0.875, doorsUB0: 0.882, doorsUB1: 0.9, out0: 0.9, out1: 0.955,
-  };
-  const SH = { x: 14, y: -3, z0: -5.2, z1: 1394.8 };
-  const slotY = SH.y + ship.userData.slotLocal.y;
-  const deckY = 0.63 + TRAIN.deckY;
-  const topY = 27.4;
-  const TZ = { z0: 1400 - W0, z1: 3000 - W0 };
-
-  const shipZ = (p) => lerp(SH.z0, SH.z1, ease(seg(p, P.sail0, P.sail1)));
-  const trainZ = (p) => lerp(TZ.z0, TZ.z1, ease(seg(p, P.rail0, P.rail1)));
-
-  function containerPos(p, out) {
-    if (p < P.lift0) return out.set(-9, 0, 0);
-    if (p < P.lower1) {
-      if (p < P.lift1) return out.set(-9, lerp(0, topY, ease(seg(p, P.lift0, P.lift1))), 0);
-      if (p < P.slide1) return out.set(lerp(-9, SH.x, ease(seg(p, P.lift1, P.slide1))), topY, 0);
-      return out.set(SH.x, lerp(topY, slotY, ease(seg(p, P.slide1, P.lower1))), 0);
-    }
-    if (p < P.bLift0) return out.copy(ship.userData.slotLocal).applyMatrix4(ship.matrixWorld);
-    if (p < P.bLower1) {
-      if (p < P.bLift1) return out.set(SH.x, lerp(slotY, topY, ease(seg(p, P.bLift0, P.bLift1))), 1400);
-      if (p < P.bSlide1) return out.set(lerp(SH.x, -9, ease(seg(p, P.bLift1, P.bSlide1))), topY, 1400);
-      return out.set(-9, lerp(topY, deckY, ease(seg(p, P.bSlide1, P.bLower1))), 1400);
-    }
-    return out.set(-9, deckY, trainZ(p) + W0);
-  }
-
-  const carPos = (p, out) => {
-    if (p < P.swap) return out.set(-9, 0, lerp(-45, 0, ease(seg(p, P.yardEnd, P.driveEnd))));
-    return out.set(-26, 0.02, lerp(2996, 2981, ease(seg(p, P.out0, P.out1))));
-  };
-
-  /* ---------------- Camera path ---------------- */
-  const tmpA = new THREE.Vector3(), tmpB = new THREE.Vector3();
-  const anchors = {
-    world: () => tmpA.set(0, 0, 0),
-    car: (p) => carPos(p, tmpA),
-    cont: (p) => containerPos(p, tmpA),
-    ship: (p) => tmpA.set(SH.x, SH.y, shipZ(p)),
-    train: (p) => tmpA.set(-9, 0, trainZ(p) + W0),
-  };
-  // [p, anchor, offset, lookOffset]
-  const KEYS = [
-    [0.000, 'car', V(4.4, 1.1, 6.0), V(0, 0.65, 0.2)],
-    [0.040, 'car', V(-3.2, 1.6, 6.6), V(0, 0.7, 0)],
-    [0.085, 'car', V(-6.8, 2.6, -1.5), V(0, 0.8, 1.5)],
-    [0.140, 'car', V(-2.6, 2.6, -10.5), V(0, 0.9, 5)],
-    [0.195, 'world', V(-9.6, 5.2, -27), V(-9, 1.5, 0)],
-    [0.245, 'world', V(-62, 26, -64), V(-2, 14, 0)],
-    [0.300, 'world', V(-80, 30, 48), V(2, 18, 0)],
-    [0.355, 'world', V(-30, 34, 58), V(10, 10, 0)],
-    [0.400, 'ship', V(-120, 62, -95), V(0, 6, 15)],
-    [0.450, 'ship', V(175, 80, -150), V(0, 2, 20)],
-    [0.505, 'ship', V(-130, 34, 175), V(0, 5, 0)],
-    [0.560, 'world', V(-64, 34, 1325), V(4, 14, 1402)],
-    [0.615, 'world', V(-58, 42, 1460), V(-2, 16, 1400)],
-    [0.665, 'world', V(-34, 14, 1440), V(-9, 3, 1404)],
-    [0.710, 'train', V(-15, 3.4, 26), V(0, 2.4, 4)],
-    [0.760, 'train', V(-9.5, 2.4, -6), V(0, 2.8, 24)],
-    [0.815, 'train', V(70, 85, -110), V(0, 0, 70)],
-    [0.875, 'world', V(-140, 60, 2890), V(-26, 3, 2996)],
-    [0.915, 'world', V(-36, 4.2, 2968), V(-26, 1.6, 2990)],
-    [0.960, 'car', V(4.6, 1.3, -7.6), V(0, 0.8, 0.4)],
-    [1.000, 'car', V(3.4, 1.0, -5.2), V(0, 0.72, 0)],
-  ];
-  const camCurve = new THREE.CatmullRomCurve3(KEYS.map(() => new THREE.Vector3()), false, 'centripetal');
-  const lookCurve = new THREE.CatmullRomCurve3(KEYS.map(() => new THREE.Vector3()), false, 'centripetal');
-  let fit = 1;
-
-  function cameraAt(p) {
-    KEYS.forEach(([, a, off, look], i) => {
-      const base = anchors[a](p);
-      camCurve.points[i].copy(base).addScaledVector(off, fit);
-      lookCurve.points[i].copy(base).add(look);
-    });
-    let i = 0;
-    while (i < KEYS.length - 2 && p > KEYS[i + 1][0]) i++;
-    const w = clamp01((p - KEYS[i][0]) / (KEYS[i + 1][0] - KEYS[i][0]));
-    const t = (i + w) / (KEYS.length - 1);
-    camCurve.getPoint(t, camera.position);
-    lookCurve.getPoint(t, tmpB);
-    camera.lookAt(tmpB);
-    return tmpB;
-  }
-
-  /* ---------------- Atmosphere keys ---------------- */
-  const ATM = [
-    // p, elevation, azimuth, sun color, fog color, exposure
-    [0.00, 26, 128, '#ffe2bf', '#c3ced8', 0.6],
-    [0.36, 46, 150, '#fff1de', '#c9d5de', 0.56],
-    [0.62, 40, 205, '#fff0da', '#d3d4cc', 0.57],
-    [0.84, 20, 236, '#ffd8a6', '#d9cbb3', 0.6],
-    [1.00, 10, 248, '#ffbf86', '#dcc0a0', 0.62],
-  ];
-  const cA = new THREE.Color(), cB = new THREE.Color(), sunDir = new THREE.Vector3();
-  function atmosphere(p) {
-    let i = 0; while (i < ATM.length - 2 && p > ATM[i + 1][0]) i++;
-    const a = ATM[i], b = ATM[i + 1], t = clamp01((p - a[0]) / (b[0] - a[0]));
-    const el = THREE.MathUtils.degToRad(lerp(a[1], b[1], t)), az = THREE.MathUtils.degToRad(lerp(a[2], b[2], t));
-    sunDir.set(Math.cos(el) * Math.sin(az), Math.sin(el), Math.cos(el) * Math.cos(az));
-    su.sunPosition.value.copy(sunDir);
-    sun.color.copy(cA.set(a[3]).lerp(cB.set(b[3]), t));
-    sun.intensity = 1.6 + 1.4 * Math.sin(el);
-    scene.fog.color.copy(cA.set(a[4]).lerp(cB.set(b[4]), t));
-    renderer.toneMappingExposure = lerp(a[5], b[5], t);
-    // haze dip that hides the rail→city time skip
-    const dip = Math.sin(Math.PI * seg(p, 0.85, 0.9)) ** 2;
-    scene.fog.near = lerp(160, 5, dip);
-    scene.fog.far = lerp(small ? 1300 : 1800, 160, dip);
-  }
-
-  /* ---------------- Resize ---------------- */
-  let lastW = 0, lastH = 0;
-  function resize() {
-    const w = canvas.clientWidth, h = canvas.clientHeight;
-    if (!w || !h) return;
-    if (w === lastW && Math.abs(h - lastH) < 120) return;
-    lastW = w; lastH = h;
-    renderer.setSize(w, h, false);
-    camera.aspect = w / h;
-    camera.fov = camera.aspect < 0.8 ? 50 : camera.aspect < 1.2 ? 42 : 34;
-    fit = camera.aspect < 0.8 ? 1.3 : 1;
-    camera.updateProjectionMatrix();
-  }
-  new ResizeObserver(resize).observe(canvas);
-  resize();
-
-  /* ---------------- Frame ---------------- */
-  const clock = new THREE.Clock();
-  const cPos = new THREE.Vector3(), lastCar = new THREE.Vector3(-9, 0, -45);
-  let p = S.journey || 0, t = 0, wheelRot = 0, first = true, shadowSpan = 0;
-
-  function update(dt, rawDt) {
-    t += dt;
-    const target = S.journey || 0;
-    p += (target - p) * (1 - Math.exp(-rawDt * 5));
-    if (Math.abs(target - p) < 1e-5) p = target;
-    onProgress && onProgress(p);
-
-    // ship (+ gentle motion while sailing)
-    const sailing = Math.sin(Math.PI * seg(p, P.sail0, P.sail1));
-    ship.position.z = shipZ(p);
-    ship.rotation.z = Math.sin(t * 0.6) * 0.012 * sailing;
-    ship.rotation.x = Math.sin(t * 0.43) * 0.006 * sailing;
-    ship.updateMatrixWorld();
-    wake.position.set(SH.x, -2.95, ship.position.z - SHIP.L / 2 - 80);
-    wake.material.opacity = 0.55 * sailing;
-
-    train.position.z = trainZ(p);
-
-    // container
-    containerPos(p, cPos);
-    const onTrainVisible = p < P.swap;
-    cont.visible = onTrainVisible;
-    cont.position.copy(cPos);
-    cont.rotation.set(p >= P.lower1 && p < P.bLift0 ? ship.rotation.x : 0, 0, p >= P.lower1 && p < P.bLift0 ? ship.rotation.z : 0);
-    cont.userData.setDoors(p < P.driveEnd ? 1 : 1 - ease(seg(p, P.driveEnd + 0.002, P.doorsClose)));
-    contUB.visible = p >= P.swap;
-    contUB.userData.setDoors(ease(seg(p, P.doorsUB0, P.doorsUB1)));
-
-    // cranes
-    const H = CONT.H;
-    if (p < P.lift0) craneA.userData.set(-9, lerp(30, H, ease(seg(p, 0.2, P.lift0))));
-    else if (p < P.lower1) craneA.userData.set(cPos.x, cPos.y + H);
-    else craneA.userData.set(SH.x, lerp(slotY + H, 30, ease(seg(p, P.lower1, P.lower1 + 0.02))));
-    if (p < P.bLift0) craneB.userData.set(SH.x, lerp(30, slotY + H, ease(seg(p, 0.545, P.bLift0))));
-    else if (p < P.bLower1) craneB.userData.set(cPos.x, cPos.y + H);
-    else craneB.userData.set(-9, lerp(deckY + H, 30, ease(seg(p, P.bLower1, P.bLower1 + 0.02))));
-
-    // hero car
-    carPos(p, car.position);
-    car.rotation.y = p < P.swap ? 0 : Math.PI;
-    car.visible = p < P.doorsClose + 0.004 || p >= P.swap;
-    const dist = car.position.distanceTo(lastCar);
-    if (dist < 5) wheelRot += dist / car.userData.radius * (p < P.swap ? 1 : 1);
-    lastCar.copy(car.position);
-    car.userData.wheels.forEach((w) => { w.rotation.x = wheelRot; });
-    const lightsOn = p > 0.06 && p < P.doorsClose || p > P.doorsUB0;
-    car.userData.head.emissiveIntensity = lightsOn ? 2.2 : 0.0;
-    car.userData.tail.emissiveIntensity = lightsOn ? 1.2 : 0.15;
-
-    // water motion
-    waterN.offset.x = t * 0.004; waterN.offset.y = t * 0.0025;
-
-    atmosphere(p);
-    const look = cameraAt(p);
-
-    // shadows follow what the camera looks at
-    const span = THREE.MathUtils.clamp(camera.position.distanceTo(look) * 0.75, 12, 150);
-    sun.target.position.copy(look);
-    sun.position.copy(look).addScaledVector(sunDir, 400);
-    if (Math.abs(span - shadowSpan) > 1) {
-      shadowSpan = span;
-      const sc = sun.shadow.camera;
-      sc.left = sc.bottom = -span; sc.right = sc.top = span; sc.near = 1; sc.far = 900;
-      sc.updateProjectionMatrix();
-    }
-  }
-
+  const camera = new THREE.PerspectiveCamera(30, 1, 8, 9000);
   let running = true;
-  function loop() {
-    const raw = Math.min(clock.getDelta(), 0.5), dt = Math.min(raw, 0.05);
-    if (S.journeyVisible !== false || first) {
-      update(dt, raw);
-      renderer.render(scene, camera);
-      if (first) { first = false; onReady && onReady(); }
-    }
-    if (running) requestAnimationFrame(loop);
-  }
-  // Fonts used on the container are canvas-drawn: wait a moment for webfonts.
-  (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(() => requestAnimationFrame(loop));
 
-  return {
-    stop() { running = false; },
-    keys: KEYS.map((k) => k[0]),
-  };
+  Promise.all([
+    loadTexture(small || renderer.capabilities.maxTextureSize < 4096 ? 'assets/map/relief_2k.jpg' : 'assets/map/relief_4k.jpg', renderer),
+    loadTexture('assets/map/far.jpg', renderer),
+    loadHeight('assets/map/height.png'),
+  ]).then(([reliefTex, farTex, heightAt]) => { if (running) build(reliefTex, farTex, heightAt); })
+    .catch((e) => { console.error(e); onError && onError(e); });
+
+  function build(reliefTex, farTex, heightAt) {
+    const altAt = (lon, lat) => heightAt(lon, lat) / 1000 / G.KM * G.EXAG;
+    const tmp = new THREE.Vector3(), up = new THREE.Vector3(), east = new THREE.Vector3(), north = new THREE.Vector3();
+
+    /* ---------------- Globe ---------------- */
+    G.frame(123, 40, up, east, north);
+    const sunDir = new THREE.Vector3().copy(up).multiplyScalar(Math.sin(34 * D2R))
+      .addScaledVector(north, Math.cos(318 * D2R) * Math.cos(34 * D2R)).addScaledVector(east, Math.sin(318 * D2R) * Math.cos(34 * D2R)).normalize();
+    const FEATHER = 0.035;
+    const P = G.PATCH;
+    const shared = {
+      uNoise: { value: noiseTexture() }, uSun: { value: sunDir }, uHaze: { value: new THREE.Color('#86aede') },
+      uDeep: { value: new THREE.Color('#0b1b33') }, uTime: { value: 0 }, uFeather: { value: FEATHER },
+      uHole: { value: new THREE.Vector4(P.lon0, P.lon1, G.mercY(P.lat1), G.mercY(P.lat0)) },
+    };
+    const surf = (map, defines, extra = {}) => new THREE.ShaderMaterial({
+      uniforms: { ...shared, map: { value: map } }, vertexShader: SURF_VERT, fragmentShader: SURF_FRAG, defines, ...extra,
+    });
+    // whole-planet base (open ocean colour), low-res surroundings, detailed relief patch
+    const baseGeo = new THREE.SphereGeometry(G.RE - 0.6, 96, 64);
+    baseGeo.setAttribute('aLL', new THREE.BufferAttribute(new Float32Array(baseGeo.getAttribute('position').count * 3), 3));
+    const base = new THREE.Mesh(baseGeo, surf(null, { IS_BASE: 1 }));
+    const far = new THREE.Mesh(sphereGrid(G.FAR, 160, 128, () => -0.3), surf(farTex, { IS_FAR: 1 }, { transparent: true, depthWrite: false }));
+    far.renderOrder = 1;
+    const edge = (u, v) => smooth(clamp01(Math.min(u, 1 - u, v, 1 - v) / (FEATHER * 1.6)));
+    const nx = small ? 320 : 640;
+    const patch = new THREE.Mesh(sphereGrid(P, nx, Math.round(nx * 0.8), (lon, lat, u, v) => altAt(lon, lat) * edge(u, v)), surf(reliefTex, {}, { transparent: true }));
+    patch.renderOrder = 2;
+    scene.add(base, far, patch);
+
+    const atmo = new THREE.Mesh(new THREE.SphereGeometry(G.RE * 1.045, 96, 64), new THREE.ShaderMaterial({
+      uniforms: { uColor: { value: new THREE.Color('#5d9cf0') }, uEdge: { value: 0.29 } },
+      vertexShader: ATMO_VERT, fragmentShader: ATMO_FRAG, side: THREE.BackSide, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+    }));
+    scene.add(atmo);
+
+    // faint stars
+    { const n = 700, sp = new Float32Array(n * 3), sc = new Float32Array(n * 3); let s = 11; const r = () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
+      for (let i = 0; i < n; i++) { const z = r() * 2 - 1, a = r() * 6.283, q = Math.sqrt(1 - z * z), b = 0.25 + r() ** 3 * 0.75; sp.set([q * Math.cos(a) * 7000, z * 7000, q * Math.sin(a) * 7000], i * 3); sc.set([b, b, b * 1.08], i * 3); }
+      const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(sp, 3)); g.setAttribute('color', new THREE.BufferAttribute(sc, 3));
+      scene.add(new THREE.Points(g, new THREE.PointsMaterial({ size: 1.6, sizeAttenuation: false, vertexColors: true, transparent: true, opacity: 0.55, depthWrite: false }))); }
+
+    /* ---------------- Route ---------------- */
+    // densify each leg with a smooth curve in lon/lat, drape it on the terrain
+    const LIFT = 0.55;
+    function densify(way, stepKm) {
+      const c = new THREE.CatmullRomCurve3(way.map(([lon, lat]) => new THREE.Vector3(lon, lat, 0)), false, 'centripetal');
+      let km = 0; for (let i = 1; i < way.length; i++) km += G.haversineKm(way[i - 1], way[i]);
+      return c.getSpacedPoints(Math.ceil(km / stepKm)).map((v) => [v.x, v.y]);
+    }
+    const seaLL = densify(G.SEA, 6), railLL = densify(G.RAIL, 5);
+    const routeLL = seaLL.concat(railLL.slice(1)), nSea = seaLL.length;
+    const cum = [0]; for (let i = 1; i < routeLL.length; i++) cum.push(cum[i - 1] + G.haversineKm(routeLL[i - 1], routeLL[i]));
+    const totalKm = cum[cum.length - 1], seaFrac = cum[nSea - 1] / totalKm, borderFrac = (() => {
+      let best = 0, bd = 1e9; routeLL.forEach((q, i) => { const d = G.haversineKm(q, G.PLACES.border); if (d < bd) { bd = d; best = i; } }); return cum[best] / totalKm;
+    })();
+    const routePts = routeLL.map(([lon, lat], i) => G.toVec(lon, lat, (i < nSea - 2 ? 0 : altAt(lon, lat)) + LIFT, new THREE.Vector3()));
+    const routeT = cum.map((k) => k / totalKm);
+    const res = new THREE.Vector2(1, 1);
+    const lineMat = (u, extra = {}) => new THREE.ShaderMaterial({
+      uniforms: {
+        uRes: { value: res }, uWidth: { value: 2 }, uColor: { value: new THREE.Color('#ff2b3f') }, uRestColor: { value: new THREE.Color('#ffffff') },
+        uHead: { value: 0 }, uRest: { value: 0 }, uDashes: { value: 1 }, uOpacity: { value: 1 }, uGlow: { value: 0 }, uPulse: { value: 0 }, uPulseN: { value: 1 }, uTime: shared.uTime, ...u,
+      },
+      vertexShader: LINE_VERT, fragmentShader: LINE_FRAG, transparent: true, depthTest: false, depthWrite: false, side: THREE.DoubleSide, ...extra,
+    });
+    const routeGeo = lineGeometry([{ pts: routePts, ts: routeT }]);
+    const routeGlow = new THREE.Mesh(routeGeo, lineMat({ uWidth: { value: 11 }, uGlow: { value: 1 }, uOpacity: { value: 0.55 } }, { blending: THREE.AdditiveBlending }));
+    const routeLine = new THREE.Mesh(routeGeo, lineMat({ uWidth: { value: 2.4 }, uRest: { value: 0.55 }, uDashes: { value: totalKm / 46 }, uPulse: { value: 0.55 }, uPulseN: { value: 5 } }));
+    routeGlow.renderOrder = 5; routeLine.renderOrder = 6; routeGlow.frustumCulled = routeLine.frustumCulled = false;
+    scene.add(routeGlow, routeLine);
+
+    // auction regions across Japan → port
+    const arcStrips = G.AUCTIONS.map((a) => {
+      const b = G.PLACES.yokohama, km = G.haversineKm(a, b), pts = [], ts = [], n = 40;
+      for (let i = 0; i <= n; i++) { const t = i / n; pts.push(G.toVec(lerp(a[0], b[0], t), lerp(a[1], b[1], t), Math.sin(Math.PI * t) * km * 0.085 / G.KM + 1.2, new THREE.Vector3())); ts.push(t); }
+      return { pts, ts };
+    });
+    const arcs = new THREE.Mesh(lineGeometry(arcStrips), lineMat({ uWidth: { value: 1.3 }, uColor: { value: new THREE.Color('#ffffff') }, uPulse: { value: 1 }, uOpacity: { value: 0 } }));
+    arcs.renderOrder = 4; arcs.frustumCulled = false; scene.add(arcs);
+
+    // Mongolia outline
+    const mnPts = G.MONGOLIA.map(([lon, lat]) => G.toVec(lon, lat, altAt(lon, lat) + 0.35, new THREE.Vector3()));
+    const border = new THREE.Mesh(lineGeometry([{ pts: mnPts, ts: mnPts.map(() => 0) }]), lineMat({ uWidth: { value: 1.1 }, uColor: { value: new THREE.Color('#ffffff') }, uHead: { value: 1 }, uOpacity: { value: 0.3 } }));
+    border.renderOrder = 3; border.frustumCulled = false; scene.add(border);
+
+    // soft glow under the moving marker
+    const glowTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d'), gr = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+      gr.addColorStop(0, 'rgba(255,120,130,1)'); gr.addColorStop(0.25, 'rgba(255,50,70,.55)'); gr.addColorStop(1, 'rgba(255,40,60,0)'); g.fillStyle = gr; g.fillRect(0, 0, 128, 128);
+      const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; })();
+    const headGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, blending: THREE.AdditiveBlending, depthTest: false, depthWrite: false, transparent: true }));
+    headGlow.renderOrder = 7; scene.add(headGlow);
+
+    /* ---------------- Timeline ---------------- */
+    const T = { arcs0: 0.015, arcs1: 0.115, depart: 0.235, seaEnd: 0.555, railStart: 0.575, railEnd: 0.855 };
+    const headFrac = (p) => p < T.seaEnd ? seaFrac * smooth(seg(p, T.depart, T.seaEnd)) : lerp(seaFrac, 1, smooth(seg(p, T.railStart, T.railEnd)));
+    const headLL = [0, 0];
+    function headAt(f) {
+      const k = f * totalKm; let lo = 0, hi = cum.length - 1;
+      while (hi - lo > 1) { const m = (lo + hi) >> 1; if (cum[m] <= k) lo = m; else hi = m; }
+      const t = clamp01((k - cum[lo]) / Math.max(1e-6, cum[hi] - cum[lo]));
+      headLL[0] = lerp(routeLL[lo][0], routeLL[hi][0], t); headLL[1] = lerp(routeLL[lo][1], routeLL[hi][1], t);
+      return headLL;
+    }
+
+    /* ---------------- Camera ---------------- */
+    // [p, Δlon, Δlat (target relative to the moving marker), distance, heading°, tilt°]
+    const KEYS = [
+      [0.000, -2.4, 1.2, 580, 304, 43],
+      [0.070, -2.1, 1.0, 480, 311, 39],
+      [0.140, -1.0, 0.5, 330, 330, 41],
+      [0.225, -0.2, -0.1, 210, 346, 50],
+      [0.300, -1.0, 0.4, 250, 320, 54],
+      [0.400, -1.9, 0.8, 320, 303, 56],
+      [0.480, -1.6, 1.2, 320, 316, 54],
+      [0.555, -0.6, 0.5, 235, 326, 52],
+      [0.640, -0.9, 0.9, 225, 334, 56],
+      [0.720, -0.6, 0.9, 222, 340, 57],
+      [0.800, -0.4, 0.7, 212, 338, 56],
+      [0.860, 0.0, 0.2, 180, 350, 50],
+      [0.930, 10.5, -5.6, 700, 327, 30],
+      [1.000, 13.5, -5.4, 860, 334, 22],
+    ];
+    const target = new THREE.Vector3(), fwd = new THREE.Vector3();
+    let shiftX = 0, shiftY = 0, vw = 1, vh = 1, fit = 1;
+    function cameraAt(p, hll) {
+      const lon = hll[0] + spline(KEYS, 1, p), lat = hll[1] + spline(KEYS, 2, p);
+      const dist = spline(KEYS, 3, p) * fit, hd = spline(KEYS, 4, p) * D2R, tilt = spline(KEYS, 5, p) * D2R;
+      G.frame(lon, lat, up, east, north);
+      G.toVec(lon, lat, 0, target);
+      fwd.copy(north).multiplyScalar(Math.cos(hd)).addScaledVector(east, Math.sin(hd));
+      camera.position.copy(target).addScaledVector(up, Math.cos(tilt) * dist).addScaledVector(fwd, -Math.sin(tilt) * dist);
+      camera.up.copy(up).multiplyScalar(Math.sin(tilt)).addScaledVector(fwd, Math.cos(tilt));
+      camera.lookAt(target);
+      // keep the action clear of the text panel (left on desktop, bottom on phones)
+      const wide = vw > 900;
+      shiftX = wide ? lerp(0.09, -0.16, smooth(seg(p, 0.9, 0.975))) : 0;
+      shiftY = wide ? 0 : 0.13;
+      camera.setViewOffset(vw, vh, -shiftX * vw, shiftY * vh, vw, vh);
+      return dist;
+    }
+
+    /* ---------------- DOM overlay: pins, labels, HUD ---------------- */
+    const overlay = host.querySelector('#jmap');
+    const marks = [];
+    if (overlay) {
+      G.AUCTIONS.forEach(([lon, lat]) => { const el = document.createElement('i'); el.className = 'jauc'; el.dataset.lon = lon; el.dataset.lat = lat; el.dataset.show = '0.01,0.2'; el.style.animationDelay = (-(lon * 7.3) % 2.4).toFixed(2) + 's'; overlay.prepend(el); });
+      overlay.querySelectorAll('[data-lon]').forEach((el) => {
+        const lon = +el.dataset.lon, lat = +el.dataset.lat, [a, b] = (el.dataset.show || '0,1').split(',').map(Number);
+        marks.push({ el, pos: G.toVec(lon, lat, altAt(lon, lat) + 0.6, new THREE.Vector3()), a, b, on: null, tag: el.querySelector('p'), w: 0, left: false });
+      });
+    }
+    const headEl = host.querySelector('#jhead');
+    const head = { el: headEl, pos: new THREE.Vector3(), a: 0.115, b: 2, on: null };
+    // labels flip to the left of their pin when they would run under the read-out or off-screen
+    const hudBox = { l: 1e9, t: 0, b: 0 };
+    function measure() {
+      for (const m of marks) if (m.tag) m.w = m.tag.offsetWidth;
+      if (hud.box && getComputedStyle(hud.box).opacity !== '0' && vw > 900) { const r = hud.box.getBoundingClientRect(), h = host.getBoundingClientRect(); hudBox.l = r.left - h.left; hudBox.t = r.top - h.top; hudBox.b = r.bottom - h.top; } else hudBox.l = 1e9;
+    }
+    if (headEl) marks.push(head);
+    const hud = { coord: host.querySelector('#jhudCoord'), km: host.querySelector('#jhudKm'), total: host.querySelector('#jhudTotal'), bar: host.querySelector('#jhudBar'), box: host.querySelector('#jhud'), nodes: Array.from(host.querySelectorAll('#jhud [data-node]')), modes: Array.from(host.querySelectorAll('#jhud [data-mode]')) };
+    const fmtKm = (v) => String(Math.round(v)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    if (hud.total) hud.total.textContent = fmtKm(Math.round(totalKm / 10) * 10);
+    const nodeAt = [0, seaFrac, borderFrac, 1];
+    hud.nodes.forEach((n, i) => { n.style.left = (nodeAt[i] * 100).toFixed(2) + '%'; });
+    const stops = Array.from(host.querySelectorAll('#jhud [data-stop]'));
+    stops.forEach((li, i) => { const em = document.createElement('em'); em.textContent = fmtKm(Math.round(nodeAt[i] * totalKm / 10) * 10); li.insertBefore(em, li.children[1]); });
+    let lastCoord = '', lastKm = '', lastMode = -1;
+    const ndc = new THREE.Vector3(), toCam = new THREE.Vector3();
+    function place(m) {
+      toCam.copy(camera.position).sub(m.pos).normalize();
+      const facing = toCam.dot(tmp.copy(m.pos).normalize());
+      ndc.copy(m.pos).project(camera);
+      const x = (ndc.x * 0.5 + 0.5) * vw, y = (-ndc.y * 0.5 + 0.5) * vh;
+      const on = pNow >= m.a && pNow <= m.b && facing > 0.12 && ndc.z < 1 && x > -40 && x < vw + 40 && y > -40 && y < vh + 40;
+      if (on) {
+        m.el.style.transform = `translate3d(${x.toFixed(1)}px,${y.toFixed(1)}px,0)`;
+        if (m.tag) {
+          const end = x + 34 + m.w, left = vw > 820 && (end > vw - 8 || (end > hudBox.l - 8 && x < hudBox.l && y > hudBox.t - 24 && y < hudBox.b + 24));
+          if (left !== m.left) { m.left = left; m.el.classList.toggle('is-left', left); }
+        }
+      }
+      if (on !== m.on) { m.on = on; m.el.classList.toggle('is-on', on); }
+    }
+
+    /* ---------------- Resize ---------------- */
+    let lastW = 0, lastH = 0;
+    function resize() {
+      const w = canvas.clientWidth, h = canvas.clientHeight;
+      if (!w || !h) return;
+      if (w === lastW && Math.abs(h - lastH) < 120) return;
+      lastW = w; lastH = h; vw = w; vh = h;
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      camera.fov = camera.aspect < 0.8 ? 46 : camera.aspect < 1.25 ? 38 : 30;
+      fit = camera.aspect < 0.8 ? 1.12 : 1;
+      camera.updateProjectionMatrix();
+      res.set(w, h);
+    }
+    new ResizeObserver(resize).observe(canvas);
+    resize();
+
+    /* ---------------- Frame ---------------- */
+    const clock = new THREE.Clock();
+    let pNow = S.journey || 0, t = 0, first = true, frame = 0;
+    function update(dt, rawDt) {
+      t += dt;
+      const goal = S.journey || 0;
+      pNow += (goal - pNow) * (1 - Math.exp(-rawDt * 5));
+      if (Math.abs(goal - pNow) < 1e-5) pNow = goal;
+      const p = pNow;
+      onProgress && onProgress(p);
+      shared.uTime.value = t;
+
+      const f = headFrac(p), hll = headAt(f);
+      const dist = cameraAt(p, hll);
+
+      // route
+      routeLine.material.uniforms.uHead.value = f; routeGlow.material.uniforms.uHead.value = f;
+      routeLine.material.uniforms.uRest.value = lerp(0.2, 0.6, smooth(seg(p, 0.1, 0.2)));
+      arcs.material.uniforms.uHead.value = smooth(seg(p, T.arcs0, T.arcs1));
+      arcs.material.uniforms.uOpacity.value = 0.85 * smooth(seg(p, 0, 0.02)) * (1 - smooth(seg(p, 0.17, 0.24)));
+      border.material.uniforms.uOpacity.value = lerp(0.28, 0.8, smooth(seg(p, 0.6, 0.7)));
+
+      // moving marker
+      const sea = f < seaFrac - 1e-4;
+      G.toVec(hll[0], hll[1], (sea ? 0 : altAt(hll[0], hll[1])) + LIFT, head.pos);
+      headGlow.position.copy(head.pos);
+      const gs = dist * (0.075 + 0.012 * Math.sin(t * 3.2)) * (p > head.a ? 1 : 0);
+      headGlow.scale.set(gs, gs, 1);
+
+      camera.updateMatrixWorld();
+      if (frame++ % 45 === 0) measure();
+      for (const m of marks) place(m);
+
+      // HUD
+      const mode = p < 0.13 ? 0 : p < T.depart ? 1 : p < T.seaEnd ? 2 : p < T.railStart ? 3 : p < T.railEnd ? 4 : 5;
+      if (mode !== lastMode) { lastMode = mode; hud.modes.forEach((el) => el.classList.toggle('is-on', +el.dataset.mode === mode)); if (headEl) headEl.dataset.mode = mode; if (hud.box) hud.box.dataset.mode = mode; }
+      const coord = `${Math.abs(hll[1]).toFixed(3)}° ${hll[1] >= 0 ? 'N' : 'S'}   ${Math.abs(hll[0]).toFixed(3)}° ${hll[0] >= 0 ? 'E' : 'W'}`;
+      if (coord !== lastCoord && hud.coord) { lastCoord = coord; hud.coord.textContent = coord; }
+      const km = fmtKm(f * totalKm);
+      if (km !== lastKm && hud.km) { lastKm = km; hud.km.textContent = km; if (hud.bar) hud.bar.style.transform = `scaleX(${f.toFixed(4)})`; hud.nodes.forEach((n, i) => n.classList.toggle('is-done', f >= nodeAt[i] - 1e-3)); stops.forEach((n, i) => n.classList.toggle('is-done', p > head.a && f >= nodeAt[i] - 1e-3)); }
+    }
+
+    function loop() {
+      if (!running) return;
+      const raw = Math.min(clock.getDelta(), 0.5), dt = Math.min(raw, 0.05);
+      if (S.journeyVisible !== false || first) {
+        update(dt, raw);
+        renderer.render(scene, camera);
+        if (first) { first = false; onReady && onReady(); }
+      }
+      requestAnimationFrame(loop);
+    }
+    requestAnimationFrame(loop);
+  }
+
+  return { stop() { running = false; } };
 }

@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.StaticFiles;
 using System.IO.Compression;
 
-// v2.saleswaves.mn — static site host (HTML/CSS/JS + Three.js 3D journey in wwwroot).
+// v2.saleswaves.mn — static site host (HTML/CSS/JS + Three.js relief-globe journey in wwwroot).
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddResponseCompression(options =>
@@ -17,8 +17,7 @@ builder.Services.AddResponseCompression(options =>
         "text/javascript",
         "text/html",
         "application/json",
-        "image/svg+xml",
-        "image/vnd.radiance"
+        "image/svg+xml"
     });
 });
 builder.Services.Configure<BrotliCompressionProviderOptions>(o => o.Level = CompressionLevel.Fastest);
@@ -44,9 +43,7 @@ app.Use(async (context, next) =>
     await next();
 });
 
-// .hdr (HDRI lighting) is not a default MIME type
 var contentTypes = new FileExtensionContentTypeProvider();
-contentTypes.Mappings[".hdr"] = "image/vnd.radiance";
 contentTypes.Mappings[".webp"] = "image/webp";
 
 app.UseDefaultFiles(); // serves index.html at "/"

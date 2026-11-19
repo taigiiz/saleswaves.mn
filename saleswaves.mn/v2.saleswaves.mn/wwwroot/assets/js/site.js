@@ -117,16 +117,16 @@ addEventListener('resize', onScroll);
 onScroll();
 onJourneyProgress(S.journey);
 
-// Boot WebGL after fonts (the container livery is drawn with webfonts).
+// Boot WebGL once the page has settled.
 function canWebGL() {
   try { const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { return false; }
 }
-const fontsReady = Promise.race([document.fonts ? document.fonts.ready : Promise.resolve(), new Promise((r) => setTimeout(r, 1800))]);
 if (canWebGL()) {
-  fontsReady.then(() => import('./journey/journey.js')).then(({ initJourney }) => {
+  import('./journey/journey.js?v=3').then(({ initJourney }) => {
     initJourney($('#journeyCanvas'), {
       onReady: () => $('#jload').classList.add('is-done'),
       onProgress: onJourneyProgress,
+      onError: () => { $('#jload').innerHTML = '<b>3D дүрслэл ачаалагдсангүй</b>'; },
     });
   }).catch((e) => {
     console.error(e);
