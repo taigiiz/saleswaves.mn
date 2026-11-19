@@ -168,6 +168,15 @@ h1, h2, h3, h4 { font-weight: 650; letter-spacing: -0.022em; line-height: 1.12; 
 .jmeter__bar { flex: 1; height: 2px; background: rgba(255,255,255,.45); }
 .jmeter__bar i { display: block; height: 100%; width: 100%; transform-origin: 0 50%; transform: scaleX(0); background: #fff; }
 .jmeter__hint { opacity: .9; }
+.jplay { flex: none; display: grid; place-items: center; width: 34px; height: 34px; padding: 0; border: 1px solid rgba(255,255,255,.55); border-radius: 50%; background: rgba(6,13,24,.55); color: #fff; cursor: pointer; transition: background .2s, border-color .2s, color .2s; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.jplay:hover { background: #fff; border-color: #fff; color: var(--ink); }
+.jplay:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+.jplay svg { display: none; width: 16px; height: 16px; }
+.jplay[data-state="paused"] .ic-play, .jplay[data-state="playing"] .ic-pause, .jplay[data-state="ended"] .ic-replay { display: block; }
+.jplay[data-state="playing"] { background: var(--red); border-color: var(--red); }
+.jplay[data-state="playing"]:hover { background: var(--red-d); border-color: var(--red-d); color: #fff; }
+.jhint-auto, .journey.is-auto .jhint-scroll { display: none; }
+.journey.is-auto .jhint-auto { display: inline; }
 .jend { position: absolute; right: var(--gut); top: 50%; transform: translateY(-40%); max-width: 520px; padding: 34px; background: rgba(255,255,255,.95); border-radius: 4px; box-shadow: 0 30px 60px -30px rgba(13,27,42,.5); opacity: 0; visibility: hidden; transition: opacity .5s, transform .5s, visibility .5s; }
 .jend.is-on { opacity: 1; visibility: visible; transform: translateY(-50%); }
 .jend h2 { font-size: clamp(30px, 3.6vw, 48px); }

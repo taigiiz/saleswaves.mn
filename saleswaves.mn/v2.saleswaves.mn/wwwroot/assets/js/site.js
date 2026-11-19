@@ -27,7 +27,7 @@ function applyLang(l) {
   try { localStorage.setItem('sw-lang', lang); } catch (e) { /* ignore */ }
 }
 applyLang(lang);
-$('#langToggle').addEventListener('click', () => applyLang(lang === 'en' ? 'mn' : 'en'));
+$('#langToggle').addEventListener('click', () => { applyLang(lang === 'en' ? 'mn' : 'en'); setPlayState(playState); });
 
 /* ---------------- Header ---------------- */
 const header = $('#header');
@@ -108,6 +108,8 @@ function onJourneyProgress(p) {
   $('#jend').classList.toggle('is-on', end);
 }
 tabs.forEach((b, i) => b.addEventListener('click', () => {
+  stopAuto();
+  autoOffered = true; // the visitor is navigating by hand
   const { top, len } = scrollRange();
   const target = i === 0 ? 0.005 : CH[i] + 0.012;
   window.scrollTo({ top: top + len * target, behavior: 'smooth' });
@@ -117,12 +119,80 @@ addEventListener('resize', onScroll);
 onScroll();
 onJourneyProgress(S.journey);
 
+/* ---------------- Journey autoplay ---------------- */
+// Plays the journey by scrolling the page at a steady pace. Starts by itself once the visitor
+// rests inside the journey; any manual scroll, key or touch hands control back.
+const playBtn = $('#jplay');
+const AUTO_SECONDS = 48;   // full journey, start to finish
+const AUTO_END = 0.985;
+let playState = 'paused', autoP = 0, autoY = -1, autoLast = 0, autoRaf = 0, autoOffered = false, idleTimer = 0, selfStartedAt = -1e9;
+function setPlayState(st) {
+  playState = st;
+  playBtn.dataset.state = st;
+  const t = (dict[lang] && dict[lang]._play) || dict.mn._play;
+  playBtn.setAttribute('aria-label', st === 'playing' ? t.pause : st === 'ended' ? t.replay : t.play);
+  journey.classList.toggle('is-auto', st === 'playing');
+}
+function autoStep(now) {
+  if (playState !== 'playing') return;
+  const dt = Math.min(0.25, (now - autoLast) / 1000);
+  autoLast = now;
+  autoP = Math.min(AUTO_END, autoP + dt / AUTO_SECONDS);
+  const { top, len } = scrollRange();
+  autoY = top + len * autoP;
+  window.scrollTo({ top: autoY, behavior: 'instant' });
+  if (autoP >= AUTO_END) { autoY = -1; setPlayState('ended'); return; }
+  autoRaf = requestAnimationFrame(autoStep);
+}
+function startAuto(fromStart) {
+  clearTimeout(idleTimer);
+  autoOffered = true;
+  const { top, len } = scrollRange();
+  autoP = fromStart || S.journey >= AUTO_END - 0.005 ? 0 : Math.max(0, (scrollY - top) / len);
+  if (scrollY < top - 2 || fromStart) window.scrollTo({ top: top + len * autoP, behavior: 'instant' });
+  setPlayState('playing');
+  autoLast = performance.now();
+  cancelAnimationFrame(autoRaf);
+  autoRaf = requestAnimationFrame(autoStep);
+}
+function stopAuto() {
+  clearTimeout(idleTimer);
+  if (playState !== 'playing') return;
+  cancelAnimationFrame(autoRaf);
+  autoY = -1;
+  setPlayState('paused');
+}
+playBtn.addEventListener('click', () => {
+  // a click that lands just as autoplay started by itself meant "play", not "pause"
+  if (playState === 'playing' && performance.now() - selfStartedAt < 1500) return;
+  if (playState === 'playing') stopAuto(); else startAuto(playState === 'ended');
+});
+// the visitor takes over
+['wheel', 'touchstart'].forEach((ev) => addEventListener(ev, (e) => { if (!e.target.closest || !e.target.closest('#jplay')) stopAuto(); }, { passive: true }));
+addEventListener('keydown', (e) => {
+  if (e.key === ' ' && e.target === playBtn) return; // space on the button toggles it
+  if (['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' '].includes(e.key)) stopAuto();
+});
+addEventListener('scroll', () => {
+  // scrollbar drag, anchor links, … — anything that moved the page away from where autoplay put it
+  if (playState === 'playing' && autoY >= 0 && Math.abs(scrollY - autoY) > 6) stopAuto();
+  if (playState === 'ended' && S.journey < AUTO_END - 0.02) setPlayState('paused');
+  else if (playState === 'paused' && S.journey >= AUTO_END - 0.005) setPlayState('ended');
+  // first visit: start on its own after a short rest inside the pinned journey
+  if (!autoOffered && !reduce && playState === 'paused') {
+    clearTimeout(idleTimer);
+    const r = journey.getBoundingClientRect();
+    if (r.top <= sticky.offsetTop + 2 && r.bottom >= innerHeight && S.journey < 0.9) idleTimer = setTimeout(() => { if (!autoOffered && playState === 'paused' && !document.hidden) { selfStartedAt = performance.now(); startAuto(false); } }, 1400);
+  }
+}, { passive: true });
+setPlayState('paused');
+
 // Boot WebGL once the page has settled.
 function canWebGL() {
   try { const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { return false; }
 }
 if (canWebGL()) {
-  import('./journey/journey.js?v=3').then(({ initJourney }) => {
+  import('./journey/journey.js?v=4').then(({ initJourney }) => {
     initJourney($('#journeyCanvas'), {
       onReady: () => $('#jload').classList.add('is-done'),
       onProgress: onJourneyProgress,

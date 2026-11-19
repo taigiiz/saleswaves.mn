@@ -55,6 +55,7 @@ window.SW_I18N = {
     'j.p5.p': 'We complete customs clearance at the border, help with financial-institution services if needed, and hand the car over to you.',
     'j.p5.v1': 'Shuren Center, Ulaanbaatar', 'j.p5.v2': 'Mon–Fri 09:00–18:00',
     'j.hint': 'Scroll to follow',
+    'j.auto': 'Playing automatically',
     'm.japan': 'Japan', 'm.china': 'China', 'm.mongolia': 'Mongolia', 'm.pacific': 'Pacific Ocean',
     'm.yokohama': 'Yokohama', 'm.yokohama.s': 'Port of loading',
     'm.tianjin': 'Tianjin', 'm.tianjin.s': 'Port of discharge · rail',
@@ -120,6 +121,7 @@ window.SW_I18N = {
     'ct.f.send': 'Send request',
     'ft.tag': 'Agent, logistics and consulting services for Japanese used car export and import.',
     'ft.nav': 'Menu', 'ft.contact': 'Contact', 'ft.rights': 'All rights reserved.',
+    _play: { play: 'Play automatically', pause: 'Pause', replay: 'Play again' },
     _form: {
       invalid: 'Please fill in your name, phone and message.',
       ok: 'Your email app has opened — just press send. You can also call +976 7700-1771.',
@@ -129,6 +131,7 @@ window.SW_I18N = {
     },
   },
   mn: {
+    _play: { play: 'Автоматаар тоглуулах', pause: 'Түр зогсоох', replay: 'Дахин тоглуулах' },
     _form: {
       invalid: 'Нэр, утас, мессежээ бөглөнө үү.',
       ok: 'Имэйл програм нээгдлээ — илгээх товчийг дарна уу. Эсвэл +976 7700-1771 дугаарт залгаарай.',
