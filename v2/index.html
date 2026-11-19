@@ -1,0 +1,474 @@
+<!doctype html>
+<html lang="mn">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Saleswaves — Японы автомашины экспорт, импортын найдвартай түнш</title>
+  <meta name="description" content="Saleswaves: Японы хуучин автомашины агент, логистик, гаалийн зөвлөх үйлчилгээ. 10+ жилийн туршлага, 2018 оноос Монголд. Японы боомтоос Улаанбаатар хүртэл 7–14 хоногт.">
+  <meta name="theme-color" content="#050b17">
+  <link rel="canonical" href="https://v2.saleswaves.mn/">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Saleswaves — Японоос Монгол хүртэл итгэлтэй зам">
+  <meta property="og:description" content="Японы хуучин автомашины экспорт, импортын агент, логистик, зөвлөх үйлчилгээ. 10+ жил туршлага · 3200+ машин · 98% сэтгэл ханамж.">
+  <meta property="og:image" content="https://v2.saleswaves.mn/assets/img/logistics.webp">
+  <meta property="og:url" content="https://v2.saleswaves.mn/">
+  <link rel="icon" type="image/png" href="assets/img/logo.png">
+  <link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Unbounded:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/styles.css">
+  <script>document.documentElement.classList.add('js');setTimeout(function(){if(!window.SWUI){document.documentElement.classList.remove('js');var l=document.getElementById('loader');l&&l.classList.add('is-done');document.body.classList.remove('is-loading')}},5000)</script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "Saleswaves",
+    "url": "https://saleswaves.mn",
+    "logo": "https://v2.saleswaves.mn/assets/img/logo.png",
+    "email": "info@saleswaves.mn",
+    "telephone": "+976 7700-1771",
+    "foundingLocation": "Ulaanbaatar, Mongolia",
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "Shuren center 5F, Ambassadors street, 1st khoroo, Sukhbaatar district",
+      "addressLocality": "Ulaanbaatar",
+      "addressCountry": "MN"
+    },
+    "openingHours": "Mo-Fr 09:00-18:00"
+  }
+  </script>
+</head>
+<body class="is-loading">
+  <a class="skip" href="#main" data-i18n="skip">Үндсэн агуулга руу шилжих</a>
+
+  <!-- Preloader -->
+  <div class="loader" id="loader" aria-hidden="true">
+    <div class="loader__inner">
+      <svg class="loader__mark" viewBox="0 0 64 52" fill="none">
+        <path class="lm-bars" d="M8 38V30a4 4 0 0 1 8 0v8M19 38V25a4 4 0 0 1 8 0v13M30 38V19a4 4 0 0 1 8 0v19" stroke="#ef3340" stroke-width="3.2" stroke-linecap="round"/>
+        <path class="lm-arrow" d="M47 38V8M40 15l7-7 7 7" stroke="#ef3340" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path class="lm-wave" d="M2 42c5-5 10-5 15 0s10 5 15 0 10-5 15 0 10 5 15 0" stroke="#4f86ff" stroke-width="3.6" stroke-linecap="round"/>
+      </svg>
+      <div class="loader__bar"><span id="loaderBar"></span></div>
+    </div>
+  </div>
+
+  <canvas id="scene" aria-hidden="true"></canvas>
+  <div class="bg-fallback" aria-hidden="true"></div>
+  <div class="grain" aria-hidden="true"></div>
+  <div class="progress" aria-hidden="true"><span id="progressBar"></span></div>
+
+  <!-- Navigation -->
+  <header class="nav" id="nav">
+    <div class="nav__inner">
+      <a href="#top" class="brand" aria-label="Saleswaves — нүүр">
+        <svg class="brand__mark" viewBox="0 0 64 52" fill="none" aria-hidden="true">
+          <path d="M8 38V30a4 4 0 0 1 8 0v8M19 38V25a4 4 0 0 1 8 0v13M30 38V19a4 4 0 0 1 8 0v19" stroke="#ef3340" stroke-width="3.6" stroke-linecap="round"/>
+          <path d="M47 38V8M40 15l7-7 7 7" stroke="#ef3340" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M2 42c5-5 10-5 15 0s10 5 15 0 10-5 15 0 10 5 15 0" stroke="#4f86ff" stroke-width="4" stroke-linecap="round"/>
+        </svg>
+        <span class="brand__word"><b>SALES</b><i>WAVES</i></span>
+      </a>
+      <nav class="nav__links" aria-label="Үндсэн цэс">
+        <a href="#services" data-i18n="nav.services">Үйлчилгээ</a>
+        <a href="#route" data-i18n="nav.process">Үйл явц</a>
+        <a href="#why" data-i18n="nav.about">Бидний тухай</a>
+        <a href="#reviews" data-i18n="nav.reviews">Сэтгэгдэл</a>
+        <a href="#faq" data-i18n="nav.faq">Асуулт</a>
+      </nav>
+      <div class="nav__actions">
+        <button class="lang" id="langToggle" type="button" aria-label="Switch language">EN</button>
+        <a class="btn btn--sm btn--red" href="#contact" data-magnetic><span data-i18n="nav.cta">Холбогдох</span></a>
+        <button class="burger" id="burger" type="button" aria-label="Цэс нээх" aria-expanded="false"><span></span><span></span></button>
+      </div>
+    </div>
+    <div class="mnav" id="mnav">
+      <a href="#services" data-i18n="nav.services">Үйлчилгээ</a>
+      <a href="#route" data-i18n="nav.process">Үйл явц</a>
+      <a href="#why" data-i18n="nav.about">Бидний тухай</a>
+      <a href="#reviews" data-i18n="nav.reviews">Сэтгэгдэл</a>
+      <a href="#faq" data-i18n="nav.faq">Асуулт</a>
+      <a href="#contact" data-i18n="nav.cta">Холбогдох</a>
+      <a class="mnav__phone" href="tel:+97677001771">+976 7700-1771</a>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- HERO -->
+    <section class="hero" id="top">
+      <div class="wrap hero__grid">
+        <div class="hero__copy">
+          <div class="chip" data-hero>
+            <span class="chip__dot"></span>
+            <span>🇯🇵 → 🇲🇳</span>
+            <span data-i18n="hero.badge">2018 оноос хойш найдвартай түнш</span>
+          </div>
+          <h1 class="hero__title" id="heroTitle" data-i18n="hero.title">Японоос Монгол хүртэл — <em>итгэлтэй</em> зам.</h1>
+          <p class="hero__lead" data-hero data-i18n="hero.lead">Японы хуучин автомашины экспорт, импортын агент, логистик, зөвлөх үйлчилгээг нэг дор. Дуудлага худалдаанаас эхлээд гаалийн бүрдүүлэлт хүртэл бүх алхмыг мэргэжлийн баг хариуцна.</p>
+          <div class="hero__cta" data-hero>
+            <a class="btn btn--red btn--lg" href="#contact" data-magnetic>
+              <span data-i18n="hero.cta1">Үнийн санал авах</span>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </a>
+            <a class="btn btn--ghost btn--lg" href="#route" data-magnetic><span data-i18n="hero.cta2">Хэрхэн ажилладаг вэ?</span></a>
+          </div>
+          <ul class="hero__trust" data-hero>
+            <li><b>10+</b><span data-i18n="hero.t1">жилийн туршлага</span></li>
+            <li><b>3200+</b><span data-i18n="hero.t2">машин энэ жил</span></li>
+            <li><b>98%</b><span data-i18n="hero.t3">сэтгэл ханамж</span></li>
+          </ul>
+        </div>
+
+        <aside class="shipcard glass" data-hero data-tilt aria-label="Тээврийн төлөв">
+          <div class="shipcard__head">
+            <span class="live"><i></i><span data-i18n="ship.live">Тээврийн төлөв</span></span>
+            <span class="shipcard__id">SW · JP→MN</span>
+          </div>
+          <div class="shipcard__route">
+            <div><small data-i18n="ship.from">Гарах</small><b data-i18n="ship.fromv">Японы боомт</b></div>
+            <div class="shipcard__line"><span class="shipcard__ship">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 16l1.5 4h15L21 16H3zM6 16V9h12v7M9 9V5h6v4"/></svg>
+            </span></div>
+            <div class="ta-r"><small data-i18n="ship.to">Хүрэх</small><b data-i18n="ship.tov">Улаанбаатар</b></div>
+          </div>
+          <div class="shipcard__stats">
+            <div><b data-count="1053">0</b><small data-i18n="ship.transit">одоогоор замд байгаа</small></div>
+            <div><b data-count="54">0</b><small data-i18n="ship.week">энэ долоо хоногт ирсэн</small></div>
+          </div>
+          <div class="shipcard__eta">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+            <span data-i18n="ship.eta">Дундаж хугацаа: <b>7–14 хоног</b></span>
+          </div>
+        </aside>
+      </div>
+      <a class="scrollcue" href="#stats" aria-label="Доош гүйлгэх"><span></span></a>
+    </section>
+
+    <!-- MARQUEE -->
+    <div class="marquee" aria-hidden="true">
+      <div class="marquee__track" data-i18n="marquee">
+        <span>Агент үйлчилгээ</span><i>✦</i><span>Төлбөрийн хяналт</span><i>✦</i><span>Нийлүүлэгчийн эрсдэлийн тооцоо</span><i>✦</i><span>Дуудлага худалдааны зөвлөгөө</span><i>✦</i><span>Гаалийн бүрдүүлэлт</span><i>✦</i><span>Олон улсын тээвэр</span><i>✦</i><span>Хуулийн хамгаалалт</span><i>✦</i>
+      </div>
+    </div>
+
+    <!-- STATS -->
+    <section class="stats" id="stats">
+      <div class="wrap">
+        <div class="stats__grid">
+          <div class="stat glass" data-reveal>
+            <b><span data-count="10">0</span>+</b>
+            <p data-i18n="stats.s1">жил Японы экспорт компанид ажилласан туршлага</p>
+          </div>
+          <div class="stat glass" data-reveal>
+            <b><span data-count="3200">0</span>+</b>
+            <p data-i18n="stats.s2">машиныг энэ жил амжилттай хүргэсэн</p>
+          </div>
+          <div class="stat glass" data-reveal>
+            <b><span data-count="98">0</span>%</b>
+            <p data-i18n="stats.s3">харилцагчийн сэтгэл ханамж</p>
+          </div>
+          <div class="stat glass" data-reveal>
+            <b>7–14</b>
+            <p data-i18n="stats.s4">хоногт Японы боомтоос Улаанбаатар хүртэл</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SERVICES -->
+    <section class="section" id="services">
+      <div class="wrap">
+        <header class="shead" data-reveal>
+          <span class="eyebrow" data-i18n="svc.eyebrow">Манай үйлчилгээ</span>
+          <h2 data-i18n="svc.title">Экспортлогчоос эхлээд <em>эзэн</em> хүртэл — иж бүрэн шийдэл</h2>
+          <p data-i18n="svc.lead">Японы экспортлогч, Монголын хувь хүн болон байгууллага — талуудын эрх ашгийг хамгаалж, хэлцэл бүрийг ил тод, аюулгүй болгоно.</p>
+        </header>
+
+        <div class="cards">
+          <article class="card glass" data-reveal data-tilt>
+            <div class="card__glow"></div>
+            <div class="card__icon">
+              <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M4 18l6-6 5 4 6-7 7 6"/><path d="M4 26h24"/><circle cx="10" cy="12" r="1.6"/><circle cx="21" cy="9" r="1.6"/></svg>
+            </div>
+            <span class="card__num">01</span>
+            <h3 data-i18n="svc.c1t">Агент үйлчилгээ</h3>
+            <ul data-i18n="svc.c1l">
+              <li>Японы экспортлогчдыг Монголын хувь хүн, байгууллагатай холбоно</li>
+              <li>Борлуулалтын зөвлөгөө өгнө</li>
+              <li>Харилцагчийн төлбөрийг хянана</li>
+              <li>Нийлүүлэгчийн эрсдэлийг тооцоолно</li>
+              <li>Монголын хуулийн дагуу экспортлогчийн эрхийг хамгаална</li>
+            </ul>
+          </article>
+          <article class="card glass" data-reveal data-tilt>
+            <div class="card__glow"></div>
+            <div class="card__icon">
+              <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="11" r="5"/><path d="M6 27c1.5-5.5 5.5-8 10-8s8.5 2.5 10 8"/><path d="M23 6l2 2 4-4"/></svg>
+            </div>
+            <span class="card__num">02</span>
+            <h3 data-i18n="svc.c2t">Харилцагчийн үйлчилгээ</h3>
+            <ul data-i18n="svc.c2l">
+              <li>Японы дуудлага худалдаанаас машин авахад зааварчилна</li>
+              <li>Машин хилээр ороход гаалийн бүрдүүлэлт хийнэ</li>
+              <li>Санхүүгийн байгууллагын үйлчилгээнд дэмжлэг үзүүлнэ</li>
+              <li>Бүх зардлын тооцоог урьдчилан гаргаж өгнө</li>
+            </ul>
+          </article>
+          <article class="card glass" data-reveal data-tilt>
+            <div class="card__glow"></div>
+            <div class="card__icon">
+              <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M3 21l2.5 6h21L29 21H3z"/><path d="M8 21v-8h16v8"/><path d="M12 13V8h8v5"/><path d="M3 30c2-1.4 4-1.4 6 0s4 1.4 6 0 4-1.4 6 0 4 1.4 6 0"/></svg>
+            </div>
+            <span class="card__num">03</span>
+            <h3 data-i18n="svc.c3t">Логистик үйлчилгээ</h3>
+            <ul data-i18n="svc.c3l">
+              <li>Олон улсын тээвэр зуучлагчидтай хамтран Япон–Монголын тээвэр зохион байгуулна</li>
+              <li>Японоос аюулгүй хүргэлт</li>
+              <li>Санал болгосон логистикийн түншүүдээс сонгох боломж</li>
+            </ul>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ROUTE (sticky, globe in WebGL) -->
+    <section class="route" id="route">
+      <div class="route__sticky">
+        <div class="wrap route__grid">
+          <div class="route__panel">
+            <span class="eyebrow" data-i18n="route.eyebrow">Үйл явц</span>
+            <h2 data-i18n="route.title">5 алхам. <em>Нэг</em> найдвартай түнш.</h2>
+            <ol class="steps" id="steps">
+              <li class="step is-active">
+                <span class="step__n">01</span>
+                <div><h3 data-i18n="route.s1t">Зөвлөгөө ба захиалга</h3><p data-i18n="route.s1p">Таны хэрэгцээ, төсвийг сонсож, татвар, тээвэр зэрэг бүх зардлын тооцоог урьдчилан гаргана.</p></div>
+              </li>
+              <li class="step">
+                <span class="step__n">02</span>
+                <div><h3 data-i18n="route.s2t">Японы дуудлага худалдаа</h3><p data-i18n="route.s2p">Японы томоохон экспорт компаниуд, дуудлага худалдаанаас чанар, гарал үүсэл нь баталгаатай машиныг сонгоно.</p></div>
+              </li>
+              <li class="step">
+                <span class="step__n">03</span>
+                <div><h3 data-i18n="route.s3t">Төлбөрийн хяналт</h3><p data-i18n="route.s3p">Төлбөр бүрийг хянаж, нийлүүлэгчийн эрсдэлийг тооцоолон таны мөнгийг хамгаална.</p></div>
+              </li>
+              <li class="step">
+                <span class="step__n">04</span>
+                <div><h3 data-i18n="route.s4t">Олон улсын тээвэр</h3><p data-i18n="route.s4p">Итгэмжлэгдсэн тээврийн түншүүдээр Японы боомтоос Улаанбаатар хүртэл 7–14 хоногт.</p></div>
+              </li>
+              <li class="step">
+                <span class="step__n">05</span>
+                <div><h3 data-i18n="route.s5t">Гааль ба хүлээлгэн өгөх</h3><p data-i18n="route.s5p">Хил дээр гаалийн бүрдүүлэлтийг хийж, машиныг таны гарт хүлээлгэн өгнө.</p></div>
+              </li>
+            </ol>
+            <div class="route__meter" aria-hidden="true"><span id="routeMeter"></span></div>
+          </div>
+          <div class="route__legend" aria-hidden="true">
+            <span><i class="dot dot--red"></i><span data-i18n="route.l1">Японы боомтууд</span></span>
+            <span><i class="dot dot--blue"></i><span data-i18n="route.l2">Улаанбаатар, Монгол</span></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- WHY / ABOUT -->
+    <section class="section" id="why">
+      <div class="wrap why">
+        <div class="why__media" data-reveal>
+          <div class="why__img" data-parallax>
+            <img src="assets/img/logistics.webp" alt="Боомт дээр контейнерээс буулгаж буй автомашин, түншлэлийн гар барилт" width="1280" height="853" loading="lazy" decoding="async">
+          </div>
+          <div class="why__badge glass">
+            <b>2018</b>
+            <span data-i18n="why.badge">оноос хойш Монголд тасралтгүй үйлчилж байна</span>
+          </div>
+        </div>
+        <div class="why__copy">
+          <header class="shead shead--left" data-reveal>
+            <span class="eyebrow" data-i18n="why.eyebrow">Saleswaves-н тухай</span>
+            <h2 data-i18n="why.title">Итгэлийг <em>үйлдлээр</em> баталдаг баг</h2>
+            <p data-i18n="why.lead">Бид Японы экспорт компанид 10 гаруй жил ажилласан туршлагаа Монголын зах зээлийн мэдлэгтэй хослуулж, хэлцэл бүрийг ил тод, хуулийн хүрээнд, хариуцлагатай гүйцэтгэдэг.</p>
+          </header>
+          <ul class="pillars">
+            <li data-reveal>
+              <span class="pillars__ic"><svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg></span>
+              <div><h3 data-i18n="why.p1t">Чанар, гарал үүслийн баталгаа</h3><p data-i18n="why.p1p">Японы томоохон экспортлогчидтой шууд ажилладаг тул машины мэдээлэл бодит, найдвартай.</p></div>
+            </li>
+            <li data-reveal>
+              <span class="pillars__ic"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h4"/></svg></span>
+              <div><h3 data-i18n="why.p2t">Төлбөрийн хяналт</h3><p data-i18n="why.p2p">Төлбөр бүрийг хянаж, нийлүүлэгчийн эрсдэлийг урьдчилан тооцоолно.</p></div>
+            </li>
+            <li data-reveal>
+              <span class="pillars__ic"><svg viewBox="0 0 24 24"><path d="M12 3v18M5 7h14M7 7l-3 7a3.5 3.5 0 0 0 6 0L7 7zM17 7l-3 7a3.5 3.5 0 0 0 6 0l-3-7z"/></svg></span>
+              <div><h3 data-i18n="why.p3t">Хуулийн хамгаалалт</h3><p data-i18n="why.p3p">Монгол Улсын хуулийн дагуу талуудын эрх ашгийг хамгаална.</p></div>
+            </li>
+            <li data-reveal>
+              <span class="pillars__ic"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3"/><path d="M18 3v4h-4M6 21v-4h4"/></svg></span>
+              <div><h3 data-i18n="why.p4t">COVID-19 үед ч тасралтгүй</h3><p data-i18n="why.p4p">Хамгийн хүнд үед ч үйл ажиллагаагаа доголдуулаагүй нь бидний тогтвортой байдлын баталгаа.</p></div>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- PARTNERS -->
+    <section class="section section--tight" id="partners">
+      <div class="wrap">
+        <header class="shead" data-reveal>
+          <span class="eyebrow" data-i18n="par.eyebrow">Логистикийн түншүүд</span>
+          <h2 data-i18n="par.title">Найдвартай түншүүдтэй <em>хамт</em></h2>
+        </header>
+        <div class="partners">
+          <a class="partner glass" href="https://wbl.mn/" target="_blank" rel="noopener" data-reveal data-tilt>
+            <span class="partner__logo">WBL</span>
+            <span class="partner__meta"><b>wbl.mn</b><small data-i18n="par.p">Олон улсын тээвэр, логистик</small></span>
+            <svg class="partner__arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8"/></svg>
+          </a>
+          <a class="partner glass" href="https://www.nicelogistics.mn/" target="_blank" rel="noopener" data-reveal data-tilt>
+            <span class="partner__logo">NICE</span>
+            <span class="partner__meta"><b>nicelogistics.mn</b><small data-i18n="par.p">Олон улсын тээвэр, логистик</small></span>
+            <svg class="partner__arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8"/></svg>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- TESTIMONIALS -->
+    <section class="section" id="reviews">
+      <div class="wrap">
+        <header class="shead" data-reveal>
+          <span class="eyebrow" data-i18n="rev.eyebrow">Харилцагчдын сэтгэгдэл</span>
+          <h2 data-i18n="rev.title">Бидэнд итгэсэн хүмүүсийн <em>бодит</em> үг</h2>
+        </header>
+        <div class="reviews">
+          <figure class="review glass" data-reveal>
+            <div class="stars" aria-label="5/5">★★★★★</div>
+            <blockquote data-i18n="rev.r1">“Saleswaves-тэй хамтран ажилласнаар манай компанийн импортын үйл явц маш хялбар, найдвартай болсон. Тэдний мэргэжлийн зөвлөгөө, логистикийн дэмжлэг нь үнэхээр маш сайн.”</blockquote>
+            <figcaption><span class="avatar">Б</span><span><b data-i18n="rev.n1">Б. Болд</b><small data-i18n="rev.c1">Гүйцэтгэх захирал, Эрдэнэт Моторс ХХК</small></span></figcaption>
+          </figure>
+          <figure class="review glass" data-reveal>
+            <div class="stars" aria-label="5/5">★★★★★</div>
+            <blockquote data-i18n="rev.r2">“Япон улсаас машин авахдаа Saleswaves-ийн агент үйлчилгээ маш их тусалсан. Төлбөрийн хяналт, гаалийн бичиг баримт бүх зүйлийг шуурхай зохицуулдаг.”</blockquote>
+            <figcaption><span class="avatar">Д</span><span><b data-i18n="rev.n2">Д. Ганбат</b><small data-i18n="rev.c2">Худалдааны менежер, Авто Плаза ХХК</small></span></figcaption>
+          </figure>
+          <figure class="review glass" data-reveal>
+            <div class="stars" aria-label="5/5">★★★★★</div>
+            <blockquote data-i18n="rev.r3">“COVID-19 цар тахлын үед ч гэсэн тэд үйл ажиллагаагаа доголдуулалгүй байсан нь надад их итгэл төрүүлсэн. Одоо 3 дахь машинаа тэднээр дамжуулж авч байна.”</blockquote>
+            <figcaption><span class="avatar">С</span><span><b data-i18n="rev.n3">С. Мөнхбат</b><small data-i18n="rev.c3">Хувиараа жолооч</small></span></figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="section" id="faq">
+      <div class="wrap faq">
+        <header class="shead shead--left" data-reveal>
+          <span class="eyebrow" data-i18n="faq.eyebrow">Түгээмэл асуулт</span>
+          <h2 data-i18n="faq.title">Танд <em>тодорхой</em> хариулт хэрэгтэй</h2>
+          <p data-i18n="faq.lead">Хариултаа олохгүй байвал бидэнтэй шууд холбогдоорой — ажлын өдөр 09:00–18:00.</p>
+          <a class="btn btn--ghost" href="tel:+97677001771" data-magnetic>+976 7700-1771</a>
+        </header>
+        <div class="faq__list">
+          <details class="qa glass" data-reveal open>
+            <summary><span data-i18n="faq.q1">Яаж машин захиалах вэ?</span><i></i></summary>
+            <div class="qa__a"><p data-i18n="faq.a1">Бидэнтэй холбогдож, сонирхсон машиныхаа мэдээллийг өгнө үү. Бид Японы дуудлага худалдаанаас тохирох машинуудыг санал болгож, бүх алхамд зааварчилгаа өгнө.</p></div>
+          </details>
+          <details class="qa glass" data-reveal>
+            <summary><span data-i18n="faq.q2">Машин хэдэн хоногт ирэх вэ?</span><i></i></summary>
+            <div class="qa__a"><p data-i18n="faq.a2">Японоос Монгол хүртэлх тээврийн хугацаа ихэвчлэн 7–14 хоног. Цаг агаар, логистикийн нөхцөлөөс хамааран өөрчлөгдөж болно.</p></div>
+          </details>
+          <details class="qa glass" data-reveal>
+            <summary><span data-i18n="faq.q3">Төлбөр яаж төлөх вэ?</span><i></i></summary>
+            <div class="qa__a"><p data-i18n="faq.a3">Банкны шилжүүлэг, картаар төлөх зэрэг хувилбаруудыг дэмждэг. Төлбөрийн нөхцөл, аюулгүй байдлын талаар манай мэргэжилтнүүд дэлгэрэнгүй тайлбарлана.</p></div>
+          </details>
+          <details class="qa glass" data-reveal>
+            <summary><span data-i18n="faq.q4">Гаалийн татвар хэд вэ?</span><i></i></summary>
+            <div class="qa__a"><p data-i18n="faq.a4">Гаалийн татвар машины үнэ, үйлдвэрлэсэн он, хөдөлгүүрийн багтаамжаас хамаарна. Бид таны сонирхсон машины бүх зардлын тооцоог урьдчилан хийж өгнө.</p></div>
+          </details>
+          <details class="qa glass" data-reveal>
+            <summary><span data-i18n="faq.q5">Баталгаа өгдөг үү?</span><i></i></summary>
+            <div class="qa__a"><p data-i18n="faq.a5">Тийм. Японы томоохон экспорт компаниудтай ажилладаг тул машины чанар, гарал үүслийн баталгаа өгч, бүх мэдээллийг бодитоор нь хүргэнэ.</p></div>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <!-- CONTACT -->
+    <section class="section" id="contact">
+      <div class="wrap">
+        <div class="contact glass" data-reveal>
+          <div class="contact__info">
+            <span class="eyebrow" data-i18n="ct.eyebrow">Холбогдох</span>
+            <h2 data-i18n="ct.title">Дараагийн машинаа <em>бидэнд</em> даатга.</h2>
+            <p data-i18n="ct.lead">Хүсэлтээ үлдээгээрэй — мэргэжилтэн тань руу ажлын өдөрт багтаан холбогдож, үнийн санал, бүх зардлын тооцоог гаргаж өгнө.</p>
+            <ul class="cinfo">
+              <li><span class="cinfo__ic"><svg viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg></span><a href="tel:+97677001771">+976 7700-1771</a></li>
+              <li><span class="cinfo__ic"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg></span><a href="mailto:info@saleswaves.mn">info@saleswaves.mn</a></li>
+              <li><span class="cinfo__ic"><svg viewBox="0 0 24 24"><path d="M12 21s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg></span><a href="https://www.google.com/maps/search/?api=1&query=Shuren+Center+Ulaanbaatar" target="_blank" rel="noopener" data-i18n="ct.addr">Сүхбаатар дүүрэг, 1-р хороо, Элчин сайдын гудамж, Шүрэн төв 5 давхар, Улаанбаатар</a></li>
+              <li><span class="cinfo__ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><span data-i18n="ct.hours">Даваа – Баасан: 09:00 – 18:00</span></li>
+            </ul>
+          </div>
+          <form class="form" id="contactForm" novalidate>
+            <fieldset class="seg" aria-label="Харилцагчийн төрөл">
+              <label><input type="radio" name="type" value="individual" checked><span data-i18n="ct.f.t1">Хувь хүн</span></label>
+              <label><input type="radio" name="type" value="company"><span data-i18n="ct.f.t2">Байгууллага</span></label>
+              <label><input type="radio" name="type" value="exporter"><span data-i18n="ct.f.t3">Японы экспортлогч</span></label>
+            </fieldset>
+            <div class="form__row">
+              <label class="field"><input name="name" required autocomplete="name" placeholder=" "><span data-i18n="ct.f.name">Нэр</span></label>
+              <label class="field"><input name="phone" required type="tel" autocomplete="tel" inputmode="tel" placeholder=" "><span data-i18n="ct.f.phone">Утас</span></label>
+            </div>
+            <label class="field"><input name="email" type="email" autocomplete="email" placeholder=" "><span data-i18n="ct.f.email">Имэйл (заавал биш)</span></label>
+            <label class="field"><textarea name="message" rows="4" required placeholder=" "></textarea><span data-i18n="ct.f.msg">Сонирхож буй машин, төсөв, асуулт…</span></label>
+            <button class="btn btn--red btn--lg btn--block" type="submit" data-magnetic>
+              <span data-i18n="ct.f.send">Хүсэлт илгээх</span>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </button>
+            <p class="form__note" id="formNote" role="status" aria-live="polite"></p>
+          </form>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap footer__grid">
+      <div>
+        <a href="#top" class="brand brand--lg" aria-label="Saleswaves">
+          <svg class="brand__mark" viewBox="0 0 64 52" fill="none" aria-hidden="true">
+            <path d="M8 38V30a4 4 0 0 1 8 0v8M19 38V25a4 4 0 0 1 8 0v13M30 38V19a4 4 0 0 1 8 0v19" stroke="#ef3340" stroke-width="3.6" stroke-linecap="round"/>
+            <path d="M47 38V8M40 15l7-7 7 7" stroke="#ef3340" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M2 42c5-5 10-5 15 0s10 5 15 0 10-5 15 0 10 5 15 0" stroke="#4f86ff" stroke-width="4" stroke-linecap="round"/>
+          </svg>
+          <span class="brand__word"><b>SALES</b><i>WAVES</i></span>
+        </a>
+        <p class="footer__tag" data-i18n="ft.tag">Японы хуучин автомашины экспорт, импортын найдвартай түнш.</p>
+      </div>
+      <div>
+        <h4 data-i18n="ft.nav">Цэс</h4>
+        <a href="#services" data-i18n="nav.services">Үйлчилгээ</a>
+        <a href="#route" data-i18n="nav.process">Үйл явц</a>
+        <a href="#why" data-i18n="nav.about">Бидний тухай</a>
+        <a href="#faq" data-i18n="nav.faq">Асуулт</a>
+      </div>
+      <div>
+        <h4 data-i18n="ft.contact">Холбоо барих</h4>
+        <a href="tel:+97677001771">+976 7700-1771</a>
+        <a href="mailto:info@saleswaves.mn">info@saleswaves.mn</a>
+        <span data-i18n="ct.hours">Даваа – Баасан: 09:00 – 18:00</span>
+      </div>
+    </div>
+    <div class="wrap footer__bottom">
+      <span>© 2022 – 2026 Saleswaves.mn. <span data-i18n="ft.rights">Бүх эрх хуулиар хамгаалагдсан.</span></span>
+      <a href="#top" class="totop" data-i18n="ft.top">Дээш буцах ↑</a>
+    </div>
+  </footer>
+
+  <script src="assets/vendor/gsap.min.js" defer></script>
+  <script src="assets/vendor/ScrollTrigger.min.js" defer></script>
+  <script src="assets/i18n.js" defer></script>
+  <script type="module" src="assets/scene.js"></script>
+  <script src="assets/ui.js" defer></script>
+</body>
+</html>
